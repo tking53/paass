@@ -2,6 +2,7 @@
 include_directories(ScanLib/include)
 add_subdirectory(ScanLib)
 
+include_directories(ScanLib/include)
 #Build utilities.
 add_subdirectory(util)
 
