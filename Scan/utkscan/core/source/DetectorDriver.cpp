@@ -59,6 +59,7 @@
 //These headers are for handling experiment specific processing.
 #include "TemplateExpProcessor.hpp"
 #include "VandleOrnl2012Processor.hpp"
+#include "Ornl2016Processor.hpp"
 
 #ifdef useroot //Some processors REQURE ROOT to function
 #include "Anl1471Processor.hpp"

@@ -5,6 +5,7 @@ set(EXPERIMENT_SOURCES
 
 if(USE_ROOT)
 list(APPEND EXPERIMENT_SOURCES
+	Ornl2016Processor.cpp
         Anl1471Processor.cpp
         IS600Processor.cpp
         TwoChanTimingProcessor.cpp)
