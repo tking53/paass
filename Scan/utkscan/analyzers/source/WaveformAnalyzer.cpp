@@ -12,6 +12,8 @@
 
 #include <cmath>
 
+#include <omp.h>
+
 #include "WaveformAnalyzer.hpp"
 
 using namespace std;
@@ -104,14 +106,17 @@ void WaveformAnalyzer::CalculateSums() {
     vector<double> w;
     double numBins = (double) (bhi_ - trc_->begin());
     mean_ = 0;
-    for (Trace::iterator it = trc_->begin(); it != trc_->end(); it++) {
-        sum += (*it);
-        if (it < bhi_)
-            mean_ += (*it) / numBins;
 
-        if (it > waverng_.first && it < waverng_.second) {
-            qdc += (*it) - mean_;
-            w.push_back((*it) - mean_);
+    #pragma omp parallel for num_threads(10)
+    for (int it = 0; it < (int)trc_->size(); ++it) {
+        sum += it;
+        if (it < int(bhi_ - trc_->begin()))
+            mean_ += it / numBins;
+
+        if (it > int(waverng_.first - trc_->begin()) &&
+            it < int(waverng_.second - trc_->begin()) ) {
+            qdc += it - mean_;
+            //w.push_back(it - mean_);
         }
     }
 
