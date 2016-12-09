@@ -1,5 +1,5 @@
 set(EXPERIMENT_SOURCES
-        TemplateExpProcessor.cpp
+        FunixCollabProcessor.cpp
 )
 
 add_library(ExperimentObjects OBJECT ${EXPERIMENT_SOURCES})
