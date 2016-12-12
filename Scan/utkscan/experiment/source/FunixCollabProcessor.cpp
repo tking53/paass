@@ -66,11 +66,13 @@ void FunixCollabProcessor::DeclarePlots(void) {
 }
 
 bool FunixCollabProcessor::Process(RawEvent &event) {
+    //plot the number of times we called the function
+    codes->Fill(PROCESS_CALLED);
+
     if (!EventProcessor::Process(event))
         return false;
 
-    //plot the number of times we called the function
-    codes->Fill(PROCESS_CALLED);
+
 
     static const vector<ChanEvent *> &pulserEvents =
             event.GetSummary("pulser")->GetList();
