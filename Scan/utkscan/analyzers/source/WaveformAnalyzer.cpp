@@ -84,7 +84,8 @@ void WaveformAnalyzer::Analyze(Trace &trace, const std::string &type,
         trace.SetWaveformRange(waveformRange);
 
     } catch (range_error &ex) {
-        cerr << "WaveformAnalyzer::Analyze - " << ex.what() << endl;
+        string det = type +":" + subtype;
+        cerr << "WaveformAnalyzer::Analyze - " << ex.what() << " for a " << det <<endl;
         EndAnalyze();
     }
 }
