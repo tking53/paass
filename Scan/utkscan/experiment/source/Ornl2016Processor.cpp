@@ -18,6 +18,7 @@
 #include <sstream>
 #include <cmath>
 #include <VandleProcessor.hpp>
+#include <TH2D.h>
 
 
 #include "DammPlotIds.hpp"
@@ -84,6 +85,7 @@ namespace dammIds {
         const int DD_GOODCYCLELOC =61+Ornl2016_OFFSET;
         const int DD_QDCVTOFNOMOD2 = 62 +Ornl2016_OFFSET;
         const int D_MOD2CHECK = 63 + Ornl2016_OFFSET;
+
     }
 }//namespace dammIds
 
@@ -129,6 +131,9 @@ void Ornl2016Processor::DeclarePlots(void) {
     DeclareHistogram2D(DD_GOODCYCLELOC,SC,S6," # of good traces per cycle in each bar");
     DeclareHistogram2D(DD_QDCVTOFNOMOD2,SC,SD,"QDC vs TOF without module 2 (second master)");
     DeclareHistogram1D(D_MOD2CHECK,S6,"# of traces in bars (without mod2)");
+
+
+
     // //Declaring beta gated
     // for (unsigned int i=0; i < 4; i++){
     //   stringstream ss;
@@ -216,6 +221,9 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
 
     string hisfilename = Globals::get()->outputFile();
     string rootname = hisfilename + ".root";
+
+    string rootname2 = hisfilename +"-hiso.root";
+
     rootFName_ = new TFile(rootname.c_str(), "RECREATE");
     Taux = new TTree("Taux", "Tree for VANDLE@OTLF@Ornl2016");
     singBranch = Taux->Branch("sing", &sing,
@@ -226,6 +234,10 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     nProcBranch = Taux->Branch("Npro", &Npro, "AbE/D:AbEvtNum/D:Multi/D");
     mVanBranch = Taux->Branch("mVan", &mVan,
                               "LaBr[16]/D:NaI[10]/D:Ge[4]/D:tof/D:qdc/D:betaEn/D:snrl/D:snrr/D:Qpos/D:tDiff/D:barid/i");
+
+    //2nd rootfile with only histograms in it
+    rootFName2_= new TFile(rootname2.c_str(),"RECREATE");
+    qdcVtof_ = new TH2D("qdcVtof","",1000,-100,900,16000,0,16000);
 
     Taux->SetAutoFlush(3000);
     rootGstrutInit(sing);
@@ -240,6 +252,9 @@ Ornl2016Processor::~Ornl2016Processor() {
 
     rootFName_->Write();
     rootFName_->Close();
+
+    rootFName2_->Write();
+    rootFName2_->Close();
 
     delete (rootFName_);
 
@@ -513,6 +528,9 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             mVan.betaEn = start.GetQdc();
             plot(DD_QDCVTOF, (tof * 2) + 1000, bar.GetQdc());
 
+            qdcVtof_->Fill(tof,bar.GetQdc());
+
+
             if (barLoc <8 || barLoc > 15){
                 plot(DD_QDCVTOFNOMOD2,(tof * 2) + 1000, bar.GetQdc());
                 plot(D_MOD2CHECK,barLoc);
@@ -555,7 +573,8 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             }
             else if (dammBin >=995 && dammBin<=1015){
                 plot(D_GCYCLE,cycleNum);
-            }else {
+            }
+            else {
 
                 plot(D_STARTLOC,startLoc+1000);
 

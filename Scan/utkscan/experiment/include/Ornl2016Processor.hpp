@@ -19,6 +19,8 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TH1D.h>
+#include <TH2D.h>
 
 #endif
 
@@ -124,6 +126,10 @@ private:
     } mVan;
 
     TFile *rootFName_;
+
+    TFile *rootFName2_;
+    TH2D *qdcVtof_;
+
 
     //functions for root preocessing
     void rootArrayreset(double arrayName[], int arraySize);
