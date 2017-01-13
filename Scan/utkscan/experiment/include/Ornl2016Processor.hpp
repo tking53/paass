@@ -130,6 +130,9 @@ private:
 
     TFile *rootFName2_;
     TH2D *qdcVtof_;
+    TH2D *tofVGe_;
+    TH2D *tofVNai_;
+    TH2D *tofVLabr_;
 
 
     //functions for root preocessing

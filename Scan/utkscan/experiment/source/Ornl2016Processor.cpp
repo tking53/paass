@@ -213,39 +213,50 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     GgammaThreshold_ = gamma_threshold_G;
     GsubEventWindow_ = sub_event_G;
 
-    // //initalize addback vecs
+    // initalize addback vectors
     LaddBack_.push_back(ScintAddBack(0, 0, 0));
     NaddBack_.push_back(ScintAddBack(0, 0, 0));
     GaddBack_.push_back(ScintAddBack(0, 0, 0));
 
-
+    // ROOT file Naming
     string hisfilename = Globals::get()->outputFile();
     string rootname = hisfilename + ".root";
-
     string rootname2 = hisfilename +"-hiso.root";
 
+    // Start Primary Root File
     rootFName_ = new TFile(rootname.c_str(), "RECREATE");
     Taux = new TTree("Taux", "Tree for Gamma-ray stuff @ ORNL2016");
     Tvan = new TTree("Tvan","Tree for Vandle Stuff (coincident gammas as well) @ ORNL2016");
+
+    //Taux Stuff
     singBranch = Taux->Branch("sing", &sing,
                               "LaBr[16]/D:NaI[10]/D:Ge[4]/D:beta/D:eventNum/D:cycle/i:gMulti/i:nMulti/i:hMulti/i:bMulti/i");
-
     gProcBranch = Taux->Branch("Gpro", &Gpro, "AbE/D:AbEvtNum/D:Multi/D");
     lProcBranch = Taux->Branch("Lpro", &Lpro, "AbE/D:AbEvtNum/D:Multi/D");
     nProcBranch = Taux->Branch("Npro", &Npro, "AbE/D:AbEvtNum/D:Multi/D");
-    mVanBranch = Tvan->Branch("mVan", &mVan,
-                              "LaBr[16]/D:NaI[10]/D:Ge[4]/D:tof/D:qdc/D:betaEn/D:snrl/D:snrr/D:Qpos/D:tDiff/D:barid/i");
-
-    //2nd rootfile with only histograms in it
-    rootFName2_= new TFile(rootname2.c_str(),"RECREATE");
-    qdcVtof_ = new TH2D("qdcVtof","",1000,-100,900,32000,-16000,16000);
 
     Taux->SetAutoFlush(3000);
     rootGstrutInit(sing);
     rootGstrutInit2(Gpro);
     rootGstrutInit2(Lpro);
     rootGstrutInit2(Npro);
+
+    // Tvan Stuff
+    mVanBranch = Tvan->Branch("mVan", &mVan,
+                              "LaBr[16]/D:NaI[10]/D:Ge[4]/D:tof/D:qdc/D:betaEn/D:snrl/D:snrr/D:Qpos/D:tDiff/D:barid/i");
+    Tvan->SetAutoFlush(3000);
     rootNstrutInit(mVan);
+
+    // End Primary Root File
+
+    // Start Secondary (Histo) RootFile
+    rootFName2_= new TFile(rootname2.c_str(),"RECREATE");
+    qdcVtof_ = new TH2D("qdcVtof","",1000,-100,900,32000,-16000,16000);
+    tofVGe_ = new  TH2D("tofVGe","",1500,-100,1400,16000,0,16000);
+    tofVLabr_ = new  TH2D("tofVLaBr","",1500,-100,1400,16000,0,16000);
+    tofVNai_ = new  TH2D("tofVNaI","",1500,-100,1400,16000,0,16000);
+
+    // End Secondary (Histo) RootFile
 }
 
 
@@ -311,6 +322,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
     rootGstrutInit2(Gpro);
     rootGstrutInit2(Lpro);
     rootGstrutInit2(Npro);
+    rootNstrutInit(mVan);
 
     //Setting vars for addback
     double LrefTime = -2.0 * LsubEventWindow_;
@@ -531,6 +543,8 @@ bool Ornl2016Processor::Process(RawEvent &event) {
 
             qdcVtof_->Fill(tof,bar.GetQdc());
 
+            //this is ghost flash troubleshooting code
+/*
 
             if (barLoc <8 || barLoc > 15){
                 plot(DD_QDCVTOFNOMOD2,(tof * 2) + 1000, bar.GetQdc());
@@ -597,6 +611,9 @@ bool Ornl2016Processor::Process(RawEvent &event) {
                 plot(DD_GETRIGVSQDC,start.GetQdc(),bar.GetQdc());
             }
 
+
+            */
+
             //tof vs gammas in damm for testing against root when its working right
             //Gamma Loops for VANDLE
             //labr loop for mVan
@@ -607,7 +624,10 @@ bool Ornl2016Processor::Process(RawEvent &event) {
                 labrNum = (*itlabr3)->GetChanID().GetLocation();
                 labrEn = (*itlabr3)->GetCalEnergy();
                 plot(DD_TOFVSHAGRID, labrEn, tof * plotMult_ + 200);
-                mVan.LaBr[labrNum] = labrEn;;
+
+                tofVLabr_->Fill(labrEn,tof);
+
+                mVan.LaBr[labrNum] = labrEn;
             };
 
             //Nai loop for mVan
@@ -617,8 +637,11 @@ bool Ornl2016Processor::Process(RawEvent &event) {
                  itNai != naiEvts.end(); itNai++) {
                 naiNum = (*itNai)->GetChanID().GetLocation();
                 naiEn = (*itNai)->GetCalEnergy();
+                plot(DD_TOFVSNAI, naiEn, tof * plotMult_ + 200);
+
+                tofVNai_->Fill(naiEn,tof);
+
                 mVan.NaI[naiNum] = naiEn;
-                plot(DD_TOFVSNAI, naiEn, tof * plotMult_ + 200);;
             };
 
             //ge loop for mVan
@@ -628,15 +651,20 @@ bool Ornl2016Processor::Process(RawEvent &event) {
                  itGe != geEvts.end(); itGe++) {
                 geNum = (*itGe)->GetChanID().GetLocation();
                 geEn = (*itGe)->GetCalEnergy();
-                mVan.Ge[geNum] = geEn;
-                plot(DD_TOFVSGE, geEn, tof * plotMult_ + 200);;
-            }
-        }
+                plot(DD_TOFVSGE, geEn, tof * plotMult_ + 200);
 
-    }//End VANDLE
+                tofVGe_->Fill(geEn,tof);
+
+                mVan.Ge[geNum] = geEn;
+            };
+        };
+
+    };//End VANDLE
 
     sing.eventNum = evtNum;
+
     Taux->Fill();
+    Tvan->Fill();
 
     evtNum++;
     EndProcess();
