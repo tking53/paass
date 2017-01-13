@@ -225,19 +225,20 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     string rootname2 = hisfilename +"-hiso.root";
 
     rootFName_ = new TFile(rootname.c_str(), "RECREATE");
-    Taux = new TTree("Taux", "Tree for VANDLE@OTLF@Ornl2016");
+    Taux = new TTree("Taux", "Tree for Gamma-ray stuff @ ORNL2016");
+    Tvan = new TTree("Tvan","Tree for Vandle Stuff (coincident gammas as well) @ ORNL2016");
     singBranch = Taux->Branch("sing", &sing,
                               "LaBr[16]/D:NaI[10]/D:Ge[4]/D:beta/D:eventNum/D:cycle/i:gMulti/i:nMulti/i:hMulti/i:bMulti/i");
 
     gProcBranch = Taux->Branch("Gpro", &Gpro, "AbE/D:AbEvtNum/D:Multi/D");
     lProcBranch = Taux->Branch("Lpro", &Lpro, "AbE/D:AbEvtNum/D:Multi/D");
     nProcBranch = Taux->Branch("Npro", &Npro, "AbE/D:AbEvtNum/D:Multi/D");
-    mVanBranch = Taux->Branch("mVan", &mVan,
+    mVanBranch = Tvan->Branch("mVan", &mVan,
                               "LaBr[16]/D:NaI[10]/D:Ge[4]/D:tof/D:qdc/D:betaEn/D:snrl/D:snrr/D:Qpos/D:tDiff/D:barid/i");
 
     //2nd rootfile with only histograms in it
     rootFName2_= new TFile(rootname2.c_str(),"RECREATE");
-    qdcVtof_ = new TH2D("qdcVtof","",1000,-100,900,16000,0,16000);
+    qdcVtof_ = new TH2D("qdcVtof","",1000,-100,900,32000,-16000,16000);
 
     Taux->SetAutoFlush(3000);
     rootGstrutInit(sing);

@@ -81,6 +81,7 @@ public:
 private:
 
     TTree *Taux;
+    TTree *Tvan;
     TBranch *singBranch;
     TBranch *gProcBranch;
     TBranch *lProcBranch;

@@ -25,10 +25,11 @@
 	  <Analyzer name="TraceExtractor" type="liglass" subtype="six"/>
 	  -->
         <Analyzer name="WaveformAnalyzer"/>
-        <Analyzer name="FittingAnalyzer" type="gsl"/>
-        <!--
+<!--
+	<Analyzer name="FittingAnalyzer" type="gsl"/>
+        -->
         <Analyzer name="CfdAnalyzer" type="poly"/>
-          -->
+          
 
       <Processor name="GeProcessor"
             gamma_threshold="10.0"
