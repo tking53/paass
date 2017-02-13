@@ -258,8 +258,8 @@ void VandleProcessor::AnalyzeBarStarts(void) {
 
             BarDetector start = (*itStart).second;
 
-            double tof = bar.GetCorTimeAve() -
-                start.GetCorTimeAve() + cal.GetTofOffset(startLoc);
+            double tof = bar.GetTimeAverage() -
+                start.GetTimeAverage() + cal.GetTofOffset(startLoc);
 
             double corTof =
                 CorrectTOF(tof, bar.GetFlightPath(), cal.GetZ0());
