@@ -17,19 +17,14 @@
 #include <iomanip>
 #include <sstream>
 #include <cmath>
-#include <VandleProcessor.hpp>
-#include <TH2D.h>
-
 
 #include "DammPlotIds.hpp"
 #include "DetectorDriver.hpp"
 
-
-#include "Ornl2016Processor.hpp"
 #include "DoubleBetaProcessor.hpp"
 #include "GeProcessor.hpp"
-
-#include "TH1.h"
+#include "Ornl2016Processor.hpp"
+#include "VandleProcessor.hpp"
 
 static unsigned int evtNum = 0;
 
@@ -196,6 +191,36 @@ void Ornl2016Processor::rootNstrutInit(NBAR &strutName) { //Zeros the entire VAN
     strutName.barid = -999;
 }
 
+
+void Ornl2016Processor::rootBWaveInit(BWave &strutName) { //Zeros the WaveForm Structures
+    fill(strutName.Ltrace, strutName.Ltrace + 131, 0);
+    fill(strutName.Rtrace, strutName.Rtrace + 131, 0);
+    strutName.Lbaseline = -999;
+    strutName.Rbaseline = -999;
+    strutName.LmaxLoc = -999;
+    strutName.RmaxLoc = -999;
+    strutName.Lamp = -999;
+    strutName.Ramp = -999;
+    strutName.BarQdc = -999;
+    }
+
+
+void Ornl2016Processor::rootVWaveInit(VWave &strutName) { //Zeros the WaveForm Structures
+    fill(strutName.Ltrace, strutName.Ltrace + 131, 0);
+    fill(strutName.Rtrace, strutName.Rtrace + 131, 0);
+    strutName.Lbaseline = -999;
+    strutName.Rbaseline = -999;
+    strutName.LmaxLoc = -999;
+    strutName.RmaxLoc = -999;
+    strutName.Lamp = -999;
+    strutName.Ramp = -999;
+    strutName.BarQdc = -999;
+    strutName.TOF = -999;
+    strutName.VbarNum = -1;
+
+}
+
+
 Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_L, double gamma_threshold_N,
                                      double sub_event_N, double gamma_threshold_G, double sub_event_G) : EventProcessor(
         OFFSET, RANGE, "Ornl2016Processor") {
@@ -222,6 +247,7 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     string hisfilename = Globals::get()->outputFile();
     string rootname = hisfilename + ".root";
     string rootname2 = hisfilename +"-hiso.root";
+    string rootname3 = hisfilename + "-wave.root";
 
     // Start Primary Root File
     rootFName_ = new TFile(rootname.c_str(), "RECREATE");
@@ -257,6 +283,20 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     tofVNai_ = new  TH2D("tofVNaI","",1500,-100,1400,16000,0,16000);
 
     // End Secondary (Histo) RootFile
+
+
+
+    // Start Tertiary (Waveform) RootFille
+    rootFName3_ = new TFile(rootname3.c_str(),"RECREATE");
+    Wave = new TTree("Wave","Tree for Waveform Analyzer Debugging");
+    VwaveBranch = Wave->Branch("Vwave",&Vwave,"Ltrace[131]/D:Rtrace[131]:Lbaseline:Rbaseline:LmaxLoc:RmaxLoc:Lamp:Ramp:BarQdc:TOF:VbarNum/I");
+    BwaveBranch = Wave->Branch("Bwave",&Bwave,"Ltrace[131]/D:Rtrace[131]:Lbaseline:Rbaseline:LmaxLoc:RmaxLoc:Lamp:Ramp:BarQdc");
+
+    rootBWaveInit(Bwave);
+    rootVWaveInit(Vwave);
+
+    Wave->SetAutoFlush(3000);
+    // Start Tertiary (Waveform) RootFille
 }
 
 
@@ -268,7 +308,12 @@ Ornl2016Processor::~Ornl2016Processor() {
     rootFName2_->Write();
     rootFName2_->Close();
 
+    rootFName3_->Write();
+    rootFName3_->Close();
+
     delete (rootFName_);
+    delete (rootFName2_);
+    delete (rootFName3_);
 
 
 }
@@ -373,16 +418,16 @@ bool Ornl2016Processor::Process(RawEvent &event) {
     //NaI ONLY----------------------------------------------------------------------------------------------------------------------------------------------
     for (vector<ChanEvent *>::const_iterator itNai = naiEvts.begin();
          itNai != naiEvts.end(); itNai++) {
-        int naiNum = (*itNai)->GetChanID().GetLocation();
-        sing.NaI[naiNum] = (*itNai)->GetCalEnergy();
-        plot(D_NAISUM, (*itNai)->GetCalEnergy()); //plot totals
+        int naiNum = (*itNai)->GetChannelNumber();
+        sing.NaI[naiNum] = (*itNai)->GetCalibratedEnergy();
+        plot(D_NAISUM, (*itNai)->GetCalibratedEnergy()); //plot totals
 
         if (hasBeta) {  //Beta Gate
-            plot(D_NAIBETA, (*itNai)->GetCalEnergy()); //plot beta-gated totals
+            plot(D_NAIBETA, (*itNai)->GetCalibratedEnergy()); //plot beta-gated totals
 
             //begin addback calulations for NaI
-            double energy = (*itNai)->GetCalEnergy();
-            double time = (*itNai)->GetCorrectedTime();
+            double energy = (*itNai)->GetCalibratedEnergy();
+            double time = (*itNai)->GetTime();
 
             if (energy < NgammaThreshold_) {
                 continue;
@@ -410,14 +455,14 @@ bool Ornl2016Processor::Process(RawEvent &event) {
     for (vector<ChanEvent *>::const_iterator itGe = geEvts.begin();
          itGe != geEvts.end(); itGe++) {
         int geNum = (*itGe)->GetChanID().GetLocation();
-        sing.Ge[geNum] = (*itGe)->GetCalEnergy();
-        plot(D_HPGESUM, (*itGe)->GetCalEnergy()); //plot non-gated totals
+        sing.Ge[geNum] = (*itGe)->GetCalibratedEnergy();
+        plot(D_HPGESUM, (*itGe)->GetCalibratedEnergy()); //plot non-gated totals
 
         if (hasBeta) { //beta-gated Processing to cut LaBr contamination out
-            plot(D_HPGESUMBETA, (*itGe)->GetCalEnergy()); //plot non-gated totals
+            plot(D_HPGESUMBETA, (*itGe)->GetCalibratedEnergy()); //plot non-gated totals
             //begin addback calulations for clover
-            double energy = (*itGe)->GetCalEnergy();
-            double time = (*itGe)->GetCorrectedTime();
+            double energy = (*itGe)->GetCalibratedEnergy();
+            double time = (*itGe)->GetTime();
             if (energy < GgammaThreshold_) {
                 continue;
             }//end energy comp if statment
@@ -446,15 +491,15 @@ bool Ornl2016Processor::Process(RawEvent &event) {
     for (vector<ChanEvent *>::const_iterator itLabr = labr3Evts.begin();
          itLabr != labr3Evts.end(); itLabr++) {
         int labrNum = (*itLabr)->GetChanID().GetLocation();
-        plot(D_LABR3SUM, (*itLabr)->GetCalEnergy()); //plot non-gated totals
+        plot(D_LABR3SUM, (*itLabr)->GetCalibratedEnergy()); //plot non-gated totals
 
         if (hasBeta) {
 
-            plot(D_LABR3BETA, (*itLabr)->GetCalEnergy()); //plot beta-gated totals
+            plot(D_LABR3BETA, (*itLabr)->GetCalibratedEnergy()); //plot beta-gated totals
             //begin addback calculations for LaBr | Beta Gated to Remove La Contamination
 
-            double energy = (*itLabr)->GetCalEnergy();
-            double time = (*itLabr)->GetCorrectedTime();
+            double energy = (*itLabr)->GetCalibratedEnergy();
+            double time = (*itLabr)->GetTime();
 
             if (energy < LgammaThreshold_) {
                 continue;
@@ -499,7 +544,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
 
         }//end beta gate
 
-        sing.LaBr[labrNum] = (*itLabr)->GetCalEnergy();
+        sing.LaBr[labrNum] = (*itLabr)->GetCalibratedEnergy();
     } //Hagrid loop end
 
     //Begin VANDLE
@@ -536,12 +581,61 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             mVan.tof = tof;
             mVan.cortof = corTof;
             mVan.barid = barLoc;
-            mVan.snrl = bar.GetLeftSide().GetSignalToNoiseRatio();
-            mVan.snrr = bar.GetRightSide().GetSignalToNoiseRatio();
+            mVan.snrl = bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
+            mVan.snrr = bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
             mVan.betaEn = start.GetQdc();
             plot(DD_QDCVTOF, (tof * 2) + 1000, bar.GetQdc());
 
             qdcVtof_->Fill(tof,bar.GetQdc());
+
+            Vwave.VbarNum=barLoc;
+            Vwave.TOF=tof;
+            Vwave.BarQdc=bar.GetQdc();
+            Vwave.Lbaseline=bar.GetLeftSide().GetAveBaseline();
+            Vwave.Rbaseline=bar.GetRightSide().GetAveBaseline();
+            Vwave.RmaxLoc=bar.GetRightSide().GetMaximumPosition();
+            Vwave.LmaxLoc=bar.GetLeftSide().GetMaximumPosition();
+            Vwave.Ramp=bar.GetRightSide().GetMaximumValue();
+            Vwave.Lamp=bar.GetLeftSide().GetMaximumValue();
+
+            Bwave.Lbaseline=start.GetLeftSide().GetAveBaseline();
+            Bwave.Rbaseline=start.GetRightSide().GetAveBaseline();
+            Bwave.BarQdc= start.GetQdc();
+            Bwave.LmaxLoc=start.GetLeftSide().GetMaximumPosition();
+            Bwave.RmaxLoc=start.GetRightSide().GetMaximumPosition();
+            Bwave.Lamp=start.GetLeftSide().GetMaximumValue();
+            Bwave.Ramp=start.GetRightSide().GetMaximumValue();
+
+
+            int itTVl=0;
+            for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace().begin();
+                 itTL != bar.GetLeftSide().GetTrace().end(); itTL++) {
+                Vwave.Ltrace[itTVl]=(*itTL);
+                itTVl++;
+            };
+
+            int itTVr=0;
+            for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace().begin();
+                 itTR != bar.GetRightSide().GetTrace().end(); itTR++) {
+                Vwave.Rtrace[itTVr]=(*itTR);
+                itTVr++;
+            };
+
+            int itTBl=0;
+            for (vector<unsigned int>::const_iterator itTL = start.GetLeftSide().GetTrace().begin();
+                 itTL != start.GetLeftSide().GetTrace().end(); itTL++) {
+                Bwave.Ltrace[itTBl]=(*itTL);
+                itTBl++;
+            };
+
+            int itTr=0;
+            for (vector<unsigned int>::const_iterator itTR = start.GetRightSide().GetTrace().begin();
+                 itTR != start.GetRightSide().GetTrace().end(); itTR++) {
+                Bwave.Rtrace[itTr]=(*itTR);
+                itTr++;
+            };
+
+            Wave->Fill();
 
             //this is ghost flash troubleshooting code
 /*
@@ -622,7 +716,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             for (vector<ChanEvent *>::const_iterator itlabr3 = labr3Evts.begin();
                  itlabr3 != labr3Evts.end(); itlabr3++) {
                 labrNum = (*itlabr3)->GetChanID().GetLocation();
-                labrEn = (*itlabr3)->GetCalEnergy();
+                labrEn = (*itlabr3)->GetCalibratedEnergy();
                 plot(DD_TOFVSHAGRID, labrEn, tof * plotMult_ + 200);
 
                 tofVLabr_->Fill(labrEn,tof);
@@ -636,7 +730,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             for (vector<ChanEvent *>::const_iterator itNai = naiEvts.begin();
                  itNai != naiEvts.end(); itNai++) {
                 naiNum = (*itNai)->GetChanID().GetLocation();
-                naiEn = (*itNai)->GetCalEnergy();
+                naiEn = (*itNai)->GetCalibratedEnergy();
                 plot(DD_TOFVSNAI, naiEn, tof * plotMult_ + 200);
 
                 tofVNai_->Fill(naiEn,tof);
@@ -650,7 +744,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             for (vector<ChanEvent *>::const_iterator itGe = geEvts.begin();
                  itGe != geEvts.end(); itGe++) {
                 geNum = (*itGe)->GetChanID().GetLocation();
-                geEn = (*itGe)->GetCalEnergy();
+                geEn = (*itGe)->GetCalibratedEnergy();
                 plot(DD_TOFVSGE, geEn, tof * plotMult_ + 200);
 
                 tofVGe_->Fill(geEn,tof);
@@ -659,12 +753,14 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             };
         };
 
+        Wave->Fill();
     };//End VANDLE
 
     sing.eventNum = evtNum;
 
     Taux->Fill();
     Tvan->Fill();
+
 
     evtNum++;
     EndProcess();
