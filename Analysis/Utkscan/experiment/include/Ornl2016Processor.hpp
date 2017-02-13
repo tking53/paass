@@ -19,6 +19,7 @@
 
 #include <TFile.h>
 #include <TTree.h>
+#include <TBranch.h>
 #include <TH1D.h>
 #include <TH2D.h>
 
@@ -82,11 +83,41 @@ private:
 
     TTree *Taux;
     TTree *Tvan;
+    TTree *Wave;
+
     TBranch *singBranch;
     TBranch *gProcBranch;
     TBranch *lProcBranch;
     TBranch *nProcBranch;
     TBranch *mVanBranch;
+    TBranch *BwaveBranch;
+    TBranch *VwaveBranch;
+
+    struct BWave{
+        double Ltrace[131];
+        double Rtrace[131];
+        double Lbaseline;
+        double Rbaseline;
+        double LmaxLoc;
+        double RmaxLoc;
+        double Lamp;
+        double Ramp;
+        double BarQdc;
+    } Bwave;
+
+    struct VWave{
+        double Ltrace[131];
+        double Rtrace[131];
+        double Lbaseline;
+        double Rbaseline;
+        double LmaxLoc;
+        double RmaxLoc;
+        double Lamp;
+        double Ramp;
+        double BarQdc;
+        double TOF;
+        int VbarNum;
+    } Vwave;
 
     struct RAY {
         double LaBr[16];
@@ -134,6 +165,7 @@ private:
     TH2D *tofVNai_;
     TH2D *tofVLabr_;
 
+    TFile *rootFName3_;
 
     //functions for root preocessing
     void rootArrayreset(double arrayName[], int arraySize);
@@ -143,6 +175,10 @@ private:
     void rootGstrutInit2(PROSS &strutName);
 
     void rootNstrutInit(NBAR &strutName);
+
+    void rootBWaveInit(BWave &strutName);
+
+    void rootVWaveInit(VWave &strutName);
 
     //thresholds and windows for gamma addback for LaBr3 (L*) and NaI (N*)
     double LgammaThreshold_;
