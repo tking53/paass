@@ -85,7 +85,7 @@ namespace dammIds {
     ///in DoubleBetaProcessor.cpp
     namespace doublebeta {
         const int OFFSET = 2170;//!< Offset for DoubleBetaProcessor
-        const int RANGE = 10;//!< Range for DoubleBetaProcessor
+        const int RANGE = 20;//!< Range for DoubleBetaProcessor
     }
 
     ///in Hen3Processor.cpp

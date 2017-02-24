@@ -27,10 +27,9 @@
         <Analyzer name="WaveformAnalyzer"/>
 
 	<Analyzer name="FittingAnalyzer" type="gsl"/>
-        <!--
-        <Analyzer name="CfdAnalyzer" type="poly"/>
-          -->
+	<Analyzer name="TraceFilterAnalyzer"/>
 
+ 
       <Processor name="GeProcessor"
             gamma_threshold="10.0"
             low_ratio="1.5"
@@ -48,8 +47,8 @@
 	<Processor name="DoubleBetaProcessor"/>
 	<Processor name="VandleProcessor"
 		   types="medium" res="2" offset="1000" NumStarts="1"/>
-	<Processor name="Ornl2016Processor"/>
-		   
+<!--	<Processor name="Ornl2016Processor"/>
+-->		   
     </DetectorDriver>
 
     <Map verbose_calibration="False" verbose_map="False" verbose_walk="False">
@@ -599,8 +598,12 @@
                 <High unit="sample" value="50"/>
             </Range>
         </WaveformRange>
-        <TraceDelay unit="ns" value="220"/>
+        <TraceDelay unit="ns" value="300"/>
         <QdcCompression value="4.0"/>
+	<TrapFilters name="beta:double">
+	  <Trigger l="104" g="0" t="286" unit="ns" />
+	  <Energy l="64" g="24" t="40" unit="ns" />
+	</TrapFilters>
     </Trace>
 
     <Fitting>
@@ -615,7 +618,7 @@
                 <Beta value="0.049601"/>
                 <Gamma value="0.163596"/>
             </Pars>
-            <Pars name="double:beta">
+            <Pars name="beta:double">
                 <Beta value="0.004329388"/>
                 <Gamma value="0.163596"/>
             </Pars>

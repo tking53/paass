@@ -103,6 +103,13 @@ private:
         double Lamp;
         double Ramp;
         double BarQdc;
+        double Lsnr;
+        double Rsnr;
+        double Lqdc;
+        double Rqdc;
+        double Tdiff;
+        double Lphase;
+        double Rphase;
     } Bwave;
 
     struct VWave{
@@ -116,6 +123,8 @@ private:
         double Ramp;
         double BarQdc;
         double TOF;
+        double Lsnr;
+        double Rsnr;
         int VbarNum;
     } Vwave;
 
@@ -176,7 +185,7 @@ private:
 
     void rootNstrutInit(NBAR &strutName);
 
-    void rootBWaveInit(BWave &strutName);
+    //void rootBWaveInit(BWave &strutName);
 
     void rootVWaveInit(VWave &strutName);
 
