@@ -81,6 +81,8 @@ namespace dammIds {
         const int DD_QDCVTOFNOMOD2 = 62 +Ornl2016_OFFSET;
         const int D_MOD2CHECK = 63 + Ornl2016_OFFSET;
 
+
+
     }
 }//namespace dammIds
 
@@ -191,7 +193,7 @@ void Ornl2016Processor::rootNstrutInit(NBAR &strutName) { //Zeros the entire VAN
     strutName.barid = -999;
 }
 
-
+/*
 void Ornl2016Processor::rootBWaveInit(BWave &strutName) { //Zeros the WaveForm Structures
     fill(strutName.Ltrace, strutName.Ltrace + 131, 0);
     fill(strutName.Rtrace, strutName.Rtrace + 131, 0);
@@ -202,8 +204,15 @@ void Ornl2016Processor::rootBWaveInit(BWave &strutName) { //Zeros the WaveForm S
     strutName.Lamp = -999;
     strutName.Ramp = -999;
     strutName.BarQdc = -999;
+    strutName.Rsnr = -999;
+    strutName.Lsnr = -999;
+    strutName.Lqdc =-999;
+    strutName.Rqdc = -999;
+    strutName.Tdiff = -99999;
+    strutName.Rphase = -999999;
+    strutName.Lphase = -999999;
     }
-
+*/
 
 void Ornl2016Processor::rootVWaveInit(VWave &strutName) { //Zeros the WaveForm Structures
     fill(strutName.Ltrace, strutName.Ltrace + 131, 0);
@@ -216,8 +225,9 @@ void Ornl2016Processor::rootVWaveInit(VWave &strutName) { //Zeros the WaveForm S
     strutName.Ramp = -999;
     strutName.BarQdc = -999;
     strutName.TOF = -999;
+    strutName.Lsnr = -999;
+    strutName.Rsnr = -999;
     strutName.VbarNum = -1;
-
 }
 
 
@@ -289,10 +299,10 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     // Start Tertiary (Waveform) RootFille
     rootFName3_ = new TFile(rootname3.c_str(),"RECREATE");
     Wave = new TTree("Wave","Tree for Waveform Analyzer Debugging");
-    VwaveBranch = Wave->Branch("Vwave",&Vwave,"Ltrace[131]/D:Rtrace[131]:Lbaseline:Rbaseline:LmaxLoc:RmaxLoc:Lamp:Ramp:BarQdc:TOF:VbarNum/I");
-    BwaveBranch = Wave->Branch("Bwave",&Bwave,"Ltrace[131]/D:Rtrace[131]:Lbaseline:Rbaseline:LmaxLoc:RmaxLoc:Lamp:Ramp:BarQdc");
+    VwaveBranch = Wave->Branch("Vwave",&Vwave,"Ltrace[131]/D:Rtrace[131]:Lbaseline:Rbaseline:LmaxLoc:RmaxLoc:Lamp:Ramp:BarQdc:TOF:Lsnr:Rsnr:VbarNum/I");
+    BwaveBranch = Wave->Branch("Bwave",&Bwave,"Ltrace[131]/D:Rtrace[131]:Lbaseline:Rbaseline:LmaxLoc:RmaxLoc:Lamp:Ramp:BarQdc:Lsnr:Rsnr:Lqdc:Rqdc:Tdiff:Lphase:Rphase");
 
-    rootBWaveInit(Bwave);
+ //   rootBWaveInit(Bwave);
     rootVWaveInit(Vwave);
 
     Wave->SetAutoFlush(3000);
@@ -308,12 +318,12 @@ Ornl2016Processor::~Ornl2016Processor() {
     rootFName2_->Write();
     rootFName2_->Close();
 
-    rootFName3_->Write();
-    rootFName3_->Close();
+//    rootFName3_->Write();
+//    rootFName3_->Close();
 
     delete (rootFName_);
     delete (rootFName2_);
-    delete (rootFName3_);
+   // delete (rootFName3_);
 
 
 }
@@ -566,10 +576,13 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             if (!start.GetHasEvent())
                 continue;
 
-            double tofOffset = cal.GetTofOffset(startLoc);
+
+
+
+
 
             double tof = bar.GetTimeAverage() -
-                         start.GetTimeAverage() + tofOffset;
+                         start.GetTimeAverage() + cal.GetTofOffset(startLoc);
 
             double corTof = ((VandleProcessor *) DetectorDriver::get()->
                     GetProcessor("VandleProcessor"))->
@@ -584,7 +597,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             mVan.snrl = bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
             mVan.snrr = bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
             mVan.betaEn = start.GetQdc();
-            plot(DD_QDCVTOF, (tof * 2) + 1000, bar.GetQdc());
+            plot(DD_QDCVTOF, (tof * 2) + plotOffset_, bar.GetQdc());
 
             qdcVtof_->Fill(tof,bar.GetQdc());
 
@@ -597,7 +610,12 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             Vwave.LmaxLoc=bar.GetLeftSide().GetMaximumPosition();
             Vwave.Ramp=bar.GetRightSide().GetMaximumValue();
             Vwave.Lamp=bar.GetLeftSide().GetMaximumValue();
+            Vwave.Lsnr=bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
+            Vwave.Rsnr=bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
+            //bar.GetLeftSide().()
 
+
+/*
             Bwave.Lbaseline=start.GetLeftSide().GetAveBaseline();
             Bwave.Rbaseline=start.GetRightSide().GetAveBaseline();
             Bwave.BarQdc= start.GetQdc();
@@ -605,6 +623,14 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             Bwave.RmaxLoc=start.GetRightSide().GetMaximumPosition();
             Bwave.Lamp=start.GetLeftSide().GetMaximumValue();
             Bwave.Ramp=start.GetRightSide().GetMaximumValue();
+            Bwave.Lsnr=start.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
+            Bwave.Rsnr=start.GetRightSide().GetTrace().GetSignalToNoiseRatio();
+            Bwave.Lqdc=start.GetLeftSide().GetTraceQdc();
+            Bwave.Rqdc=start.GetRightSide().GetTraceQdc();
+            Bwave.Lphase = start.GetLeftSide().GetP;
+            Bwave.Rphase = start.GetRightSide()
+
+*/
 
 
             int itTVl=0;
@@ -641,7 +667,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
 /*
 
             if (barLoc <8 || barLoc > 15){
-                plot(DD_QDCVTOFNOMOD2,(tof * 2) + 1000, bar.GetQdc());
+                plot(DD_QDCVTOFNOMOD2,(tof * 2) + plotOffset_, bar.GetQdc());
                 plot(D_MOD2CHECK,barLoc);
             };
 

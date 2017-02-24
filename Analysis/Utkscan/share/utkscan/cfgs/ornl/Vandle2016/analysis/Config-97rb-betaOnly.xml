@@ -46,10 +46,10 @@
 		 double_stop="True"
                  double_start="True"/>
 	<Processor name="DoubleBetaProcessor"/>
-	<Processor name="VandleProcessor"
+<!--	<Processor name="VandleProcessor"
 		   types="medium" res="2" offset="1000" NumStarts="1"/>
 	<Processor name="Ornl2016Processor"/>
-		   
+-->		   
     </DetectorDriver>
 
     <Map verbose_calibration="False" verbose_map="False" verbose_walk="False">
@@ -599,7 +599,7 @@
                 <High unit="sample" value="50"/>
             </Range>
         </WaveformRange>
-        <TraceDelay unit="ns" value="220"/>
+        <TraceDelay unit="ns" value="300"/>
         <QdcCompression value="4.0"/>
     </Trace>
 

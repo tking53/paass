@@ -43,6 +43,10 @@ namespace dammIds {
 
         const int D_DEBUGGING    = 0+DEBUGGING_OFFSET;//!< Debugging countable problems
         const int DD_DEBUGGING   = 1+DEBUGGING_OFFSET;//!< 2D Hist to count problems
+        const int DD_QDCVTOFcut = 3+ DEBUGGING_OFFSET; //!qdc vs tof cut on central beta tdiff
+        const int DD_QDCvTOFthres   = 4 + DEBUGGING_OFFSET; //!qdc vs tof with a threshold for the max of the trace
+
+
     }
 }//namespace dammIds
 
@@ -165,6 +169,9 @@ void VandleProcessor::DeclarePlots(void) {
 
     DeclareHistogram1D(D_DEBUGGING, S5, "1D Debugging");
     DeclareHistogram2D(DD_DEBUGGING, S8, S8, "2D Debugging");
+    DeclareHistogram2D(DD_QDCVTOFcut,SC,SD,"Qdc vs ToF cut on central beta peak");
+    DeclareHistogram2D(DD_QDCvTOFthres,SC,SD,"QDC vs ToF with a threshold on the traces");
+
 }
 
 bool VandleProcessor::PreProcess(RawEvent &event) {
@@ -258,15 +265,34 @@ void VandleProcessor::AnalyzeBarStarts(void) {
 
             BarDetector start = (*itStart).second;
 
-            double tof = bar.GetTimeAverage() -
-                start.GetTimeAverage() + cal.GetTofOffset(startLoc);
+            double tof = bar.GetCorTimeAve() -
+                start.GetCorTimeAve() + cal.GetTofOffset(startLoc);
 
             double corTof =
                 CorrectTOF(tof, bar.GetFlightPath(), cal.GetZ0());
 
+            double BthresR = (((start.GetRightSide().GetMaximumValue())/(start.GetRightSide().GetBaseline()))-1.);
+            double BthresL = (((start.GetLeftSide().GetMaximumValue())/(start.GetLeftSide().GetBaseline()))-1.);
+
+            double stdMulti = 2; //! multiple above the std baseline the trace must be to be "valid"
+
+            //cout<<"STD Left = "<<start.GetLeftSide().GetStdDevBaseline()<<endl;
+
+            if( BthresL >= (stdMulti * start.GetLeftSide().GetStdDevBaseline()) && BthresR >= (stdMulti * start.GetRightSide().GetStdDevBaseline())){
+
+                plot(DD_QDCvTOFthres,tof*plotMult_+plotOffset_,bar.GetQdc());
+            };
+
+            // Cut range is 1350 - 1625
+
+            double BtDiff = (start.GetTimeDifference()*2+1500); //!2 and 1500 come from double beta processor so that it matches whats plotted there
+
+                if (BtDiff>= 1350 && BtDiff <= 1625){
+                    plot(DD_QDCVTOFcut,tof*plotMult_+plotOffset_,bar.GetQdc());
+                };
+
             plot(DD_TOFBARS+histTypeOffset, tof*plotMult_+plotOffset_,
                  barPlusStartLoc);
-            plot(DD_CORTOFBARS, corTof*plotMult_+plotOffset_, barPlusStartLoc);
 
             if(cal.GetTofOffset(startLoc) != 0) {
                 plot(DD_TQDCAVEVSTOF+histTypeOffset, tof*plotMult_+plotOffset_,

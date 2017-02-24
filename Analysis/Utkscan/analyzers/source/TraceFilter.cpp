@@ -74,7 +74,9 @@ unsigned int TraceFilter::CalcFilters(const Trace *sig) {
         
         if(!isConverted_)
             ConvertToClockticks();
+        cout<<"start Trig filt Calc"<<endl;
         CalcTriggerFilter();
+        cout<<"start Rest of calcs"<<endl;
         CalcBaseline();
         CalcEnergyFilterCoeffs();
 
@@ -188,6 +190,8 @@ void TraceFilter::CalcTriggerFilter(void) {
     bool hasRecrossed = false;
 
     int l = t_.GetRisetime(), g = t_.GetFlattop();
+    cout <<"l= "<<l<<"    g= "<<g<<endl;
+
     for(int i = 0; i < (int)sig_->size(); i++) {
         double sum1 = 0, sum2 = 0;
         if( (i-2*l-g+1) >= 0 ) {
