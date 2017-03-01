@@ -11,13 +11,9 @@
     </Description>
 
     <Global>
-      <Revision version="F"/>
-      <BitResolution value="12"/>
-      <EventWidth unit="s" value="2e-6"/>
-      <EnergyContraction value="1.0"/>
-      <OutputPath>./</OutputPath>
-      <NumOfTraces value="50"/>
-      <HasRaw value="true"/>
+        <Revision version="F"/>
+        <EventWidth unit="s" value="2e-6"/>
+        <HasRaw value="true"/>
     </Global>
 
     <DetectorDriver>
@@ -26,29 +22,29 @@
 	  -->
         <Analyzer name="WaveformAnalyzer"/>
 
-	<Analyzer name="FittingAnalyzer" type="gsl"/>
-	<Analyzer name="TraceFilterAnalyzer"/>
+        <Analyzer name="FittingAnalyzer" type="gsl"/>
+        <Analyzer name="TraceFilterAnalyzer"/>
 
  
-      <Processor name="GeProcessor"
-            gamma_threshold="10.0"
-            low_ratio="1.5"
-            high_ratio="3.0"
-            sub_event="1e-6"
-            gamma_beta_limit="1e-6"
-            gamma_gamma_limit="2e-6"
-            cycle_gate1_min="1.0"
-            cycle_gate1_max="1.5"
-            cycle_gate2_min="1.5"
-            cycle_gate2_max="2.0" />
-      <Processor name="LogicProcessor"
-		 double_stop="True"
-                 double_start="True"/>
-	<Processor name="DoubleBetaProcessor"/>
-	<Processor name="VandleProcessor"
-		   types="medium" res="2" offset="1000" NumStarts="1"/>
-<!--	<Processor name="Ornl2016Processor"/>
--->		   
+        <Processor name="GeProcessor"
+                   gamma_threshold="10.0"
+                   low_ratio="1.5"
+                   high_ratio="3.0"
+                   sub_event="1e-6"
+                   gamma_beta_limit="1e-6"
+                   gamma_gamma_limit="2e-6"
+                   cycle_gate1_min="1.0"
+                   cycle_gate1_max="1.5"
+                   cycle_gate2_min="1.5"
+                   cycle_gate2_max="2.0" />
+        <Processor name="LogicProcessor"
+                   double_stop="True"
+                   double_start="True"/>
+        <Processor name="DoubleBetaProcessor"/>
+        <Processor name="VandleProcessor"
+                   types="medium" res="2" offset="1000" NumStarts="1"/>
+        <Processor name="Ornl2016Processor"/>
+		   
     </DetectorDriver>
 
     <Map verbose_calibration="False" verbose_map="False" verbose_walk="False">
@@ -600,15 +596,15 @@
         </WaveformRange>
         <TraceDelay unit="ns" value="300"/>
         <QdcCompression value="4.0"/>
-	<TrapFilters name="beta:double">
-	  <Trigger l="104" g="0" t="286" unit="ns" />
-	  <Energy l="64" g="24" t="40" unit="ns" />
-	</TrapFilters>
+        <TrapFilters name="beta:double">
+            <Trigger l="104" g="0" t="286" unit="ns" />
+            <Energy l="64" g="24" t="40" unit="ns" />
+        </TrapFilters>
     </Trace>
 
     <Fitting>
         <SigmaBaselineThresh value="3.0"/>
-        <SiPmtSigmaBaselineThresh value="10.0"/>
+        <SiPmSigmaBaselineThresh value="10.0"/>
         <Parameters>
             <Pars name="vandle:medium">
                 <Beta value="0.254373"/>
