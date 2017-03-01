@@ -337,6 +337,11 @@ void GlobalsXmlParser::ParseTraceNode(const pugi::xml_node &node, Globals *globa
             tmp.insert(std::make_pair(
                     trapit->attribute("name").as_string(),
                     std::make_pair(tfilt, efilt)));
+            std::cout<<"Parsed Name = "<<trapit->attribute("name").as_string()<<std::endl;
+            std::cout<<"TrapParms Trig="<<std::endl<<"l="<<trig.attribute("l").as_double()<<std::endl<<"g="<<trig.attribute("g").as_double()<<std::endl
+                     <<"t="<<trig.attribute("t").as_double()<<std::endl;
+            std::cout<<"TrapParms Energy="<<std::endl<<"l="<<en.attribute("l").as_double()<<std::endl<<"g="<<en.attribute("g").as_double()<<std::endl
+                     <<"t="<<en.attribute("t").as_double()<<std::endl;
         }
         globals->SetTrapFilterParameters(tmp);
     }
