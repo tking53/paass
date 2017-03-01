@@ -254,10 +254,11 @@ Ornl2016Processor::Ornl2016Processor(double gamma_threshold_L, double sub_event_
     GaddBack_.push_back(ScintAddBack(0, 0, 0));
 
     // ROOT file Naming
-    string hisfilename = Globals::get()->outputFile();
+    string hisPath = Globals::get()->GetOutputPath();
+    string hisfilename = hisPath + Globals::get()->GetOutputFileName();
     string rootname = hisfilename + ".root";
     string rootname2 = hisfilename +"-hiso.root";
-    string rootname3 = hisfilename + "-wave.root";
+    string rootname3 = hisfilename + "-Owave.root";
 
     // Start Primary Root File
     rootFName_ = new TFile(rootname.c_str(), "RECREATE");
@@ -393,7 +394,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
 
     if (TreeCorrelator::get()->place("Cycle")->status()) {
         double cycleTime = TreeCorrelator::get()->place("Cycle")->last().time;
-        cycleTime *= Globals::get()->clockInSeconds() * 1.e9;
+        cycleTime *= Globals::get()->GetClockInSeconds() * 1.e9;
         if (cycleTime != cycleLast) {
             double tdiff = (cycleTime - cycleLast) / 1e6; //Outputs cycle length in msecs.
             if (cycleNum == 0) {
@@ -442,7 +443,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             if (energy < NgammaThreshold_) {
                 continue;
             }//end energy comp if statment
-            double t1 = Globals::get()->clockInSeconds();
+            double t1 = Globals::get()->GetClockInSeconds();
             double dtime = abs(time - NrefTime) * t1;
 
             if (dtime >
@@ -476,7 +477,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
             if (energy < GgammaThreshold_) {
                 continue;
             }//end energy comp if statment
-            double t1 = Globals::get()->clockInSeconds();
+            double t1 = Globals::get()->GetClockInSeconds();
             double dtime = abs(time - GrefTime) * t1;
 
             if (dtime >
@@ -515,7 +516,7 @@ bool Ornl2016Processor::Process(RawEvent &event) {
                 continue;
             }//end energy comp if statment
 
-            double t1 = Globals::get()->clockInSeconds();
+            double t1 = Globals::get()->GetClockInSeconds();
             double dtime = abs(time - LrefTime) * t1;
 
             if (dtime >

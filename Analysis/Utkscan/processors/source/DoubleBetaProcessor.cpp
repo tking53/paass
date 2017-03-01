@@ -57,8 +57,9 @@ DoubleBetaProcessor::DoubleBetaProcessor():
     EventProcessor(OFFSET, RANGE, "DoubleBetaProcessor") {
     associatedTypes.insert("beta");
 
-    string hisfilename = Globals::get()->outputFile();
-    string rootname3 = hisfilename + "-Bwave.root";
+    string hisPath = Globals::get()->GetOutputPath();
+    string hisfilename = hisPath + Globals::get()->GetOutputFileName();
+    string rootname3 = hisfilename + "-DBwave.root";
 
     rootFName3_ = new TFile(rootname3.c_str(),"RECREATE");
     BWaveT = new TTree("Wave","Tree for Waveform Analyzer Debugging");
