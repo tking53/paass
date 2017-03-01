@@ -46,11 +46,13 @@
 #include "VandleOrnl2012Processor.hpp"
 
 #ifdef useroot //Some processors REQUIRE ROOT to function
+
 #include "Anl1471Processor.hpp"
 #include "IS600Processor.hpp"
 #include "Ornl2016Processor.hpp"
 #include "RootProcessor.hpp"
 #include "TwoChanTimingProcessor.hpp"
+
 #endif
 
 using namespace std;
@@ -74,9 +76,9 @@ void DetectorDriverXmlParser::ParseNode(DetectorDriver *driver) {
     messenger_.done();
 }
 
-vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
+vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(
         const pugi::xml_node &node) {
-    std::vector<EventProcessor*> vecProcess;
+    std::vector<EventProcessor *> vecProcess;
 
     for (pugi::xml_node processor = node; processor;
          processor = processor.next_sibling(node.name())) {
@@ -87,8 +89,8 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
         //LaBr and NaI subEventWindows and Thresholds are slaved to the clover by default
         // moving declaration here for that reason
 
-        double gamma_threshold=0;
-        double sub_event=0;
+        double gamma_threshold = 0;
+        double sub_event = 0;
 
         if (name == "BetaScintProcessor") {
             vecProcess.push_back(new BetaScintProcessor(
@@ -97,11 +99,13 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
         } else if (name == "GeProcessor") {
             ///@TODO This needs to be cleaned. No method should have this
             /// many variables as arguments.
-             vecProcess.push_back(new GeProcessor(
-                    gamma_threshold = processor.attribute("gamma_threshold").as_double(1.0),
+            vecProcess.push_back(new GeProcessor(
+                    gamma_threshold = processor.attribute(
+                            "gamma_threshold").as_double(1.0),
                     processor.attribute("low_ratio").as_double(1.0),
                     processor.attribute("high_ratio").as_double(3.0),
-                    sub_event = processor.attribute("sub_event").as_double(100.e-9),
+                    sub_event = processor.attribute("sub_event").as_double(
+                            100.e-9),
                     processor.attribute("gamma_beta_limit").as_double(200.e-9),
                     processor.attribute("gamma_gamma_limit").as_double(200.e-9),
                     processor.attribute("cycle_gate1_min").as_double(0.0),
@@ -130,7 +134,7 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
         } else if (name == "VandleProcessor") {
             vecProcess.push_back(new VandleProcessor(
                     StringManipulation::TokenizeString(
-                            processor.attribute("types").as_string(),","),
+                            processor.attribute("types").as_string(), ","),
                     processor.attribute("res").as_double(2.0),
                     processor.attribute("offset").as_double(1000.0),
                     processor.attribute("NumStarts").as_uint(1)));
@@ -156,12 +160,13 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
             vecProcess.push_back(new VandleOrnl2012Processor());
         } else if (name == "RootProcessor") {
             vecProcess.push_back(new RootProcessor("tree.root", "tree"));
-        }else if (name == "Ornl2016Processor") {
+        } else if (name == "Ornl2016Processor") {
             double gamma_threshold_G = gamma_threshold;
             double sub_event_G = sub_event;
 
             double gamma_threshold_L =
-                    processor.attribute("gamma_threshold_L").as_double(gamma_threshold_G);
+                    processor.attribute("gamma_threshold_L").as_double(
+                            gamma_threshold_G);
             if (gamma_threshold_L == gamma_threshold_G)
                 messenger_.warning("LaBr3 Threshold = Ge Threshold", 1);
             double sub_event_L =
@@ -169,16 +174,18 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
             if (sub_event_L == sub_event_G)
                 messenger_.warning("LaBr3 sub_event = Ge sub_event", 1);
             double gamma_threshold_N =
-                    processor.attribute("gamma_threshold_N").as_double(gamma_threshold_G);
+                    processor.attribute("gamma_threshold_N").as_double(
+                            gamma_threshold_G);
             if (gamma_threshold_N == gamma_threshold_G)
                 messenger_.warning("NaI Threshold = Ge Threshold", 1);
             double sub_event_N =
                     processor.attribute("sub_event_N").as_double(sub_event_G);
             if (sub_event_N == sub_event_G)
                 messenger_.warning("NaI sub_event = Ge sub_event", 1);
-            vecProcess.push_back(new Ornl2016Processor(gamma_threshold_L, sub_event_L,
-                                                       gamma_threshold_N, sub_event_N,
-                                                       gamma_threshold_G, sub_event_G));
+            vecProcess.push_back(
+                    new Ornl2016Processor(gamma_threshold_L, sub_event_L,
+                                          gamma_threshold_N, sub_event_N,
+                                          gamma_threshold_G, sub_event_G));
         }
 
 #endif
@@ -193,19 +200,19 @@ vector<EventProcessor*> DetectorDriverXmlParser::ParseProcessors(
     return vecProcess;
 }
 
-vector<TraceAnalyzer*> DetectorDriverXmlParser::ParseAnalyzers(
+vector<TraceAnalyzer *> DetectorDriverXmlParser::ParseAnalyzers(
         const pugi::xml_node &node) {
-    std::vector<TraceAnalyzer*> vecAnalyzer;
+    std::vector<TraceAnalyzer *> vecAnalyzer;
 
     for (pugi::xml_node analyzer = node; analyzer;
          analyzer = analyzer.next_sibling(node.name())) {
         string name = analyzer.attribute("name").value();
         messenger_.detail("Loading " + name);
 
-        if(name == "TraceFilterAnalyzer") {
+        if (name == "TraceFilterAnalyzer") {
             vecAnalyzer.push_back(new TraceFilterAnalyzer(
                     analyzer.attribute("FindPileup").as_bool(false)));
-        } else if(name == "TauAnalyzer") {
+        } else if (name == "TauAnalyzer") {
             vecAnalyzer.push_back(new TauAnalyzer());
         } else if (name == "TraceExtractor") {
             vecAnalyzer.push_back(new TraceExtractor(
