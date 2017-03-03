@@ -22,13 +22,24 @@
 #include "EventProcessor.hpp"
 #include "HighResTimingData.hpp"
 
+
+#ifdef useroot
+
+#include <TFile.h>
+#include <TTree.h>
+#include <TBranch.h>
+#include <TH1D.h>
+#include <TH2D.h>
+
+#endif
+
 /// Class to process VANDLE related events
 class VandleProcessor : public EventProcessor {
 public:
     /** Default Constructor */
     VandleProcessor();
     /** Default Destructor */
-    ~VandleProcessor() {};
+    ~VandleProcessor();
     /** Declare the plots used in the analysis */
     virtual void DeclarePlots(void);
 
@@ -88,6 +99,27 @@ protected:
 
     unsigned int numStarts_; //!< The number of starts set in the Config File
 private:
+
+
+
+    TFile *rootFName3_;
+    TTree *Wave;
+    TBranch *VwaveBranch;
+
+    struct VWave{
+        double trace[131];
+        double LowResTime;
+        double ID;
+        double baseline;
+        double baselineSTD;
+        double maxLoc;
+        double amp;
+        double qdc;
+        double phase;
+            } Vwave;
+
+    void rootVWaveInit(VWave &strutName);
+
     /** Analyze the data for scenarios with Bar Starts; e.g. Double Beta
      * detectors */
     void AnalyzeBarStarts(void);
