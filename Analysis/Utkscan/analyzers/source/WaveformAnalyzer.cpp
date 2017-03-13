@@ -44,8 +44,12 @@ void WaveformAnalyzer::Analyze(Trace &trace, const std::string &type,
 
     try {
         //First we calculate the position of the maximum.
+        double traceDelay = globals->GetTraceDelayInNs();
+        if (type == "beta")
+            traceDelay=188;
+
         pair<unsigned int, double> max =
-                TraceFunctions::FindMaximum(trace, globals->GetTraceDelayInNs() /
+                TraceFunctions::FindMaximum(trace, traceDelay /
                                                    (globals->GetAdcClockInSeconds() *
                                                     1.e9));
 
