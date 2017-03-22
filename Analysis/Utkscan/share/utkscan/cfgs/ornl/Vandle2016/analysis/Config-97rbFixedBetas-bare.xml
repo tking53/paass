@@ -12,15 +12,11 @@
     </Description>
 
     <Global>
-      <Revision version="F"/>
-      <BitResolution value="12"/>
-      <EventWidth unit="s" value="2e-6"/>
-      <EnergyContraction value="1.0"/>
-      <OutputPath>./</OutputPath>
-      <NumOfTraces value="50"/>
-      <HasRaw value="true"/>
+    <Revision version="F"/>
+    <EventWidth unit="s" value="2e-6"/>
+    <HasRaw value="true"/>
     </Global>
-
+    
     <DetectorDriver>
 
         <Analyzer name="WaveformAnalyzer"/>

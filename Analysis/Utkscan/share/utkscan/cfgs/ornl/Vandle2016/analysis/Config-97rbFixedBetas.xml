@@ -8,16 +8,12 @@
 
     <Description>
         Configuration for 97rb_02 data UPDATED to work with paass (current as
-        of March 13 2017
+        of March 20 2017
     </Description>
 
     <Global>
         <Revision version="F"/>
-        <BitResolution value="12"/>
         <EventWidth unit="s" value="2e-6"/>
-        <EnergyContraction value="1.0"/>
-        <OutputPath>./</OutputPath>
-        <NumOfTraces value="50"/>
         <HasRaw value="true"/>
     </Global>
 
