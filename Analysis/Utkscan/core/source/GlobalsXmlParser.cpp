@@ -292,6 +292,7 @@ void GlobalsXmlParser::ParseTraceNode(const pugi::xml_node &node, Globals *globa
     } else
         throw CriticalNodeMessage(node.child("TraceDelay").name());
 
+    sstream_.str("");
     if (!node.child("QdcCompression").empty())
         globals->SetQdcCompression(
                 node.child("QdcCompression").attribute("value").as_double());
