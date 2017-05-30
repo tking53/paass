@@ -351,10 +351,11 @@ bool Ornl2016Processor::Process(RawEvent &event) {
     hasBeta = TreeCorrelator::get()->place(
             "Beta")->status(); //might need a static initialize to false + reset at the end
 
-    if (event.GetSummary("vandle")->GetList().size() != 0) {
+    /*    if (event.GetSummary("vandle")->GetList().size() != 0) {
         vbars = ((VandleProcessor *) DetectorDriver::get()->
                 GetProcessor("VandleProcessor"))->GetBars();
     }
+    */    
     if (event.GetSummary("beta:double")->GetList().size() != 0) {
         betas = ((DoubleBetaProcessor *) DetectorDriver::get()->
                 GetProcessor("DoubleBetaProcessor"))->GetBars();
@@ -558,230 +559,230 @@ bool Ornl2016Processor::Process(RawEvent &event) {
         sing.LaBr[labrNum] = (*itLabr)->GetCalibratedEnergy();
     } //Hagrid loop end
 
-    //Begin VANDLE
-    for (BarMap::iterator it = vbars.begin(); it != vbars.end(); it++) {
-        TimingDefs::TimingIdentifier barId = (*it).first;
-        BarDetector bar = (*it).second;
+     //Begin VANDLE
+     for (BarMap::iterator it = vbars.begin(); it != vbars.end(); it++) {
+         TimingDefs::TimingIdentifier barId = (*it).first;
+         BarDetector bar = (*it).second;
 
 
-        if (!bar.GetHasEvent() || bar.GetType() == "small")
-            continue;
+         if (!bar.GetHasEvent() || bar.GetType() == "small")
+             continue;
 
-        int barLoc = barId.first;
-        TimingCalibration cal = bar.GetCalibration();
+         int barLoc = barId.first;
+         TimingCalibration cal = bar.GetCalibration();
 
-        for (BarMap::iterator itStart = betas.begin();
-             itStart != betas.end(); itStart++) {
-            unsigned int startLoc = (*itStart).first.first;
-            BarDetector start = (*itStart).second;
-            if (!start.GetHasEvent())
-                continue;
-
-
-
+         for (BarMap::iterator itStart = betas.begin();
+              itStart != betas.end(); itStart++) {
+             unsigned int startLoc = (*itStart).first.first;
+             BarDetector start = (*itStart).second;
+             if (!start.GetHasEvent())
+                 continue;
 
 
 
-            double tof = bar.GetTimeAverage() -
-                         start.GetTimeAverage() + cal.GetTofOffset(startLoc);
-
-            double corTof = ((VandleProcessor *) DetectorDriver::get()->
-                    GetProcessor("VandleProcessor"))->
-                    CorrectTOF(tof, bar.GetFlightPath(), cal.GetZ0());
-
-            mVan.qdc = bar.GetQdc();
-            mVan.Qpos = bar.GetQdcPosition();
-            mVan.tDiff = bar.GetTimeDifference();
-            mVan.tof = tof;
-            mVan.cortof = corTof;
-            mVan.barid = barLoc;
-            mVan.snrl = bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
-            mVan.snrr = bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
-            mVan.betaEn = start.GetQdc();
-            plot(DD_QDCVTOF, (tof * 2) + plotOffset_, bar.GetQdc());
-
-            qdcVtof_->Fill(tof,bar.GetQdc());
-
-            Vwave.VbarNum=barLoc;
-            Vwave.TOF=tof;
-            Vwave.BarQdc=bar.GetQdc();
-            Vwave.Lbaseline=bar.GetLeftSide().GetAveBaseline();
-            Vwave.Rbaseline=bar.GetRightSide().GetAveBaseline();
-            Vwave.RmaxLoc=bar.GetRightSide().GetMaximumPosition();
-            Vwave.LmaxLoc=bar.GetLeftSide().GetMaximumPosition();
-            Vwave.Ramp=bar.GetRightSide().GetMaximumValue();
-            Vwave.Lamp=bar.GetLeftSide().GetMaximumValue();
-            Vwave.Lsnr=bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
-            Vwave.Rsnr=bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
-            //bar.GetLeftSide().()
 
 
-/*
-            Bwave.Lbaseline=start.GetLeftSide().GetAveBaseline();
-            Bwave.Rbaseline=start.GetRightSide().GetAveBaseline();
-            Bwave.BarQdc= start.GetQdc();
-            Bwave.LmaxLoc=start.GetLeftSide().GetMaximumPosition();
-            Bwave.RmaxLoc=start.GetRightSide().GetMaximumPosition();
-            Bwave.Lamp=start.GetLeftSide().GetMaximumValue();
-            Bwave.Ramp=start.GetRightSide().GetMaximumValue();
-            Bwave.Lsnr=start.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
-            Bwave.Rsnr=start.GetRightSide().GetTrace().GetSignalToNoiseRatio();
-            Bwave.Lqdc=start.GetLeftSide().GetTraceQdc();
-            Bwave.Rqdc=start.GetRightSide().GetTraceQdc();
-            Bwave.Lphase = start.GetLeftSide().GetP;
-            Bwave.Rphase = start.GetRightSide()
 
-*/
+             double tof = bar.GetTimeAverage() -
+                          start.GetTimeAverage() + cal.GetTofOffset(startLoc);
 
+             double corTof = ((VandleProcessor *) DetectorDriver::get()->
+                     GetProcessor("VandleProcessor"))->
+                     CorrectTOF(tof, bar.GetFlightPath(), cal.GetZ0());
 
-            int itTVl=0;
-            for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace().begin();
-                 itTL != bar.GetLeftSide().GetTrace().end(); itTL++) {
-                Vwave.Ltrace[itTVl]=(*itTL);
-                itTVl++;
-            };
+             mVan.qdc = bar.GetQdc();
+             mVan.Qpos = bar.GetQdcPosition();
+             mVan.tDiff = bar.GetTimeDifference();
+             mVan.tof = tof;
+             mVan.cortof = corTof;
+             mVan.barid = barLoc;
+             mVan.snrl = bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
+             mVan.snrr = bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
+             mVan.betaEn = start.GetQdc();
+             plot(DD_QDCVTOF, (tof * 2) + plotOffset_, bar.GetQdc());
 
-            int itTVr=0;
-            for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace().begin();
-                 itTR != bar.GetRightSide().GetTrace().end(); itTR++) {
-                Vwave.Rtrace[itTVr]=(*itTR);
-                itTVr++;
-            };
+             qdcVtof_->Fill(tof,bar.GetQdc());
 
-            int itTBl=0;
-            for (vector<unsigned int>::const_iterator itTL = start.GetLeftSide().GetTrace().begin();
-                 itTL != start.GetLeftSide().GetTrace().end(); itTL++) {
-                Bwave.Ltrace[itTBl]=(*itTL);
-                itTBl++;
-            };
-
-            int itTr=0;
-            for (vector<unsigned int>::const_iterator itTR = start.GetRightSide().GetTrace().begin();
-                 itTR != start.GetRightSide().GetTrace().end(); itTR++) {
-                Bwave.Rtrace[itTr]=(*itTR);
-                itTr++;
-            };
-
-            Wave->Fill();
-
-            //this is ghost flash troubleshooting code
-/*
-
-            if (barLoc <8 || barLoc > 15){
-                plot(DD_QDCVTOFNOMOD2,(tof * 2) + plotOffset_, bar.GetQdc());
-                plot(D_MOD2CHECK,barLoc);
-            };
+             Vwave.VbarNum=barLoc;
+             Vwave.TOF=tof;
+             Vwave.BarQdc=bar.GetQdc();
+             Vwave.Lbaseline=bar.GetLeftSide().GetAveBaseline();
+             Vwave.Rbaseline=bar.GetRightSide().GetAveBaseline();
+             Vwave.RmaxLoc=bar.GetRightSide().GetMaximumPosition();
+             Vwave.LmaxLoc=bar.GetLeftSide().GetMaximumPosition();
+             Vwave.Ramp=bar.GetRightSide().GetMaximumValue();
+             Vwave.Lamp=bar.GetLeftSide().GetMaximumValue();
+             Vwave.Lsnr=bar.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
+             Vwave.Rsnr=bar.GetRightSide().GetTrace().GetSignalToNoiseRatio();
+             //bar.GetLeftSide().()
 
 
-            static int trcCounter = 0;
-            static int ftrcCounter = 0;
-            double dammBin = (tof * 2) + 1000;
-            static int badTrcEvtCounter = 0;
-            if (dammBin >= 1048 && dammBin <= 1078) {
-                for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace()->begin();
-                     itTL != bar.GetLeftSide().GetTrace()->end(); itTL++) {
-                    plot(DD_FLASHTRACES, itTL - bar.GetLeftSide().GetTrace()->begin(), ftrcCounter, (*itTL));
-                }
-                for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace()->begin();
-                     itTR != bar.GetRightSide().GetTrace()->end(); itTR++) {
-                    plot(DD_FLASHTRACES, itTR - bar.GetRightSide().GetTrace()->begin(),
-                         ftrcCounter + 1, (*itTR));
-                }
-                ftrcCounter += 3;
+ /*
+             Bwave.Lbaseline=start.GetLeftSide().GetAveBaseline();
+             Bwave.Rbaseline=start.GetRightSide().GetAveBaseline();
+             Bwave.BarQdc= start.GetQdc();
+             Bwave.LmaxLoc=start.GetLeftSide().GetMaximumPosition();
+             Bwave.RmaxLoc=start.GetRightSide().GetMaximumPosition();
+             Bwave.Lamp=start.GetLeftSide().GetMaximumValue();
+             Bwave.Ramp=start.GetRightSide().GetMaximumValue();
+             Bwave.Lsnr=start.GetLeftSide().GetTrace().GetSignalToNoiseRatio();
+             Bwave.Rsnr=start.GetRightSide().GetTrace().GetSignalToNoiseRatio();
+             Bwave.Lqdc=start.GetLeftSide().GetTraceQdc();
+             Bwave.Rqdc=start.GetRightSide().GetTraceQdc();
+             Bwave.Lphase = start.GetLeftSide().GetP;
+             Bwave.Rphase = start.GetRightSide()
 
-                plot(D_BADLOCATION, barLoc);
-                plot(D_STARTLOC,startLoc);
-                if (TreeCorrelator::get()->place("Cycle")->status()) {
-                    double inCycleTime = bar.GetTimeAverage();
-                    double cycleTimeLast = TreeCorrelator::get()->place("Cycle")->last().time;
-                    cycleTimeLast *= (Globals::get()->clockInSeconds() * 1.e9);
-                    double currenttime = (inCycleTime) - (cycleTimeLast);
+ */
 
 
-                    //cout << endl << "timeavg=" << inCycleTime << endl << "currenttime=" << currenttime << endl
-                    //     << "last cycle start=" << cycleTimeLast << endl;
+             int itTVl=0;
+             for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace().begin();
+                  itTL != bar.GetLeftSide().GetTrace().end(); itTL++) {
+                 Vwave.Ltrace[itTVl]=(*itTL);
+                 itTVl++;
+             };
 
-                    plot(DD_SIGNOIS, bar.GetLeftSide().GetSignalToNoiseRatio(),bar.GetQdc() );
-                    plot(DD_ETRIGVSQDC,start.GetQdc(),bar.GetQdc());
-                    plot(D_BADCYCLE, cycleNum);
-                    plot(DD_BADCYCLELOC,cycleNum,barLoc);
-                }
-            }
-            else if (dammBin >=995 && dammBin<=1015){
-                plot(D_GCYCLE,cycleNum);
-            }
-            else {
+             int itTVr=0;
+             for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace().begin();
+                  itTR != bar.GetRightSide().GetTrace().end(); itTR++) {
+                 Vwave.Rtrace[itTVr]=(*itTR);
+                 itTVr++;
+             };
 
-                plot(D_STARTLOC,startLoc+1000);
+             int itTBl=0;
+             for (vector<unsigned int>::const_iterator itTL = start.GetLeftSide().GetTrace().begin();
+                  itTL != start.GetLeftSide().GetTrace().end(); itTL++) {
+                 Bwave.Ltrace[itTBl]=(*itTL);
+                 itTBl++;
+             };
 
-                for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace()->begin();
-                     itTL != bar.GetLeftSide().GetTrace()->end(); itTL++) {
-                    plot(DD_TRACES, itTL - bar.GetLeftSide().GetTrace()->begin(),
-                         trcCounter, (*itTL));
-                }
+             int itTr=0;
+             for (vector<unsigned int>::const_iterator itTR = start.GetRightSide().GetTrace().begin();
+                  itTR != start.GetRightSide().GetTrace().end(); itTR++) {
+                 Bwave.Rtrace[itTr]=(*itTR);
+                 itTr++;
+             };
 
-                for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace()->begin();
-                     itTR != bar.GetRightSide().GetTrace()->end(); itTR++) {
-                    plot(DD_TRACES, itTR - bar.GetRightSide().GetTrace()->begin(),
-                         trcCounter + 1, (*itTR));
-                }
+             Wave->Fill();
 
-                trcCounter += 3;
-                plot(DD_QDCVSTOFNOF, (tof * 2) + 1000, bar.GetQdc());
-                plot(DD_GSIGNOIS, bar.GetLeftSide().GetSignalToNoiseRatio(),bar.GetQdc() );
-                plot(DD_GETRIGVSQDC,start.GetQdc(),bar.GetQdc());
-            }
+             //this is ghost flash troubleshooting code
+ /*
+
+             if (barLoc <8 || barLoc > 15){
+                 plot(DD_QDCVTOFNOMOD2,(tof * 2) + plotOffset_, bar.GetQdc());
+                 plot(D_MOD2CHECK,barLoc);
+             };
 
 
-            */
+             static int trcCounter = 0;
+             static int ftrcCounter = 0;
+             double dammBin = (tof * 2) + 1000;
+             static int badTrcEvtCounter = 0;
+             if (dammBin >= 1048 && dammBin <= 1078) {
+                 for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace()->begin();
+                      itTL != bar.GetLeftSide().GetTrace()->end(); itTL++) {
+                     plot(DD_FLASHTRACES, itTL - bar.GetLeftSide().GetTrace()->begin(), ftrcCounter, (*itTL));
+                 }
+                 for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace()->begin();
+                      itTR != bar.GetRightSide().GetTrace()->end(); itTR++) {
+                     plot(DD_FLASHTRACES, itTR - bar.GetRightSide().GetTrace()->begin(),
+                          ftrcCounter + 1, (*itTR));
+                 }
+                 ftrcCounter += 3;
 
-            //tof vs gammas in damm for testing against root when its working right
-            //Gamma Loops for VANDLE
-            //labr loop for mVan
-            int labrNum;
-            double labrEn;
-            for (vector<ChanEvent *>::const_iterator itlabr3 = labr3Evts.begin();
-                 itlabr3 != labr3Evts.end(); itlabr3++) {
-                labrNum = (*itlabr3)->GetChanID().GetLocation();
-                labrEn = (*itlabr3)->GetCalibratedEnergy();
-                plot(DD_TOFVSHAGRID, labrEn, tof * plotMult_ + 200);
+                 plot(D_BADLOCATION, barLoc);
+                 plot(D_STARTLOC,startLoc);
+                 if (TreeCorrelator::get()->place("Cycle")->status()) {
+                     double inCycleTime = bar.GetTimeAverage();
+                     double cycleTimeLast = TreeCorrelator::get()->place("Cycle")->last().time;
+                     cycleTimeLast *= (Globals::get()->clockInSeconds() * 1.e9);
+                     double currenttime = (inCycleTime) - (cycleTimeLast);
 
-                tofVLabr_->Fill(labrEn,tof);
 
-                mVan.LaBr[labrNum] = labrEn;
-            };
+                     //cout << endl << "timeavg=" << inCycleTime << endl << "currenttime=" << currenttime << endl
+                     //     << "last cycle start=" << cycleTimeLast << endl;
 
-            //Nai loop for mVan
-            int naiNum;
-            double naiEn;
-            for (vector<ChanEvent *>::const_iterator itNai = naiEvts.begin();
-                 itNai != naiEvts.end(); itNai++) {
-                naiNum = (*itNai)->GetChanID().GetLocation();
-                naiEn = (*itNai)->GetCalibratedEnergy();
-                plot(DD_TOFVSNAI, naiEn, tof * plotMult_ + 200);
+                     plot(DD_SIGNOIS, bar.GetLeftSide().GetSignalToNoiseRatio(),bar.GetQdc() );
+                     plot(DD_ETRIGVSQDC,start.GetQdc(),bar.GetQdc());
+                     plot(D_BADCYCLE, cycleNum);
+                     plot(DD_BADCYCLELOC,cycleNum,barLoc);
+                 }
+             }
+             else if (dammBin >=995 && dammBin<=1015){
+                 plot(D_GCYCLE,cycleNum);
+             }
+             else {
 
-                tofVNai_->Fill(naiEn,tof);
+                 plot(D_STARTLOC,startLoc+1000);
 
-                mVan.NaI[naiNum] = naiEn;
-            };
+                 for (vector<unsigned int>::const_iterator itTL = bar.GetLeftSide().GetTrace()->begin();
+                      itTL != bar.GetLeftSide().GetTrace()->end(); itTL++) {
+                     plot(DD_TRACES, itTL - bar.GetLeftSide().GetTrace()->begin(),
+                          trcCounter, (*itTL));
+                 }
 
-            //ge loop for mVan
-            int geNum;
-            double geEn;
-            for (vector<ChanEvent *>::const_iterator itGe = geEvts.begin();
-                 itGe != geEvts.end(); itGe++) {
-                geNum = (*itGe)->GetChanID().GetLocation();
-                geEn = (*itGe)->GetCalibratedEnergy();
-                plot(DD_TOFVSGE, geEn, tof * plotMult_ + 200);
+                 for (vector<unsigned int>::const_iterator itTR = bar.GetRightSide().GetTrace()->begin();
+                      itTR != bar.GetRightSide().GetTrace()->end(); itTR++) {
+                     plot(DD_TRACES, itTR - bar.GetRightSide().GetTrace()->begin(),
+                          trcCounter + 1, (*itTR));
+                 }
 
-                tofVGe_->Fill(geEn,tof);
+                 trcCounter += 3;
+                 plot(DD_QDCVSTOFNOF, (tof * 2) + 1000, bar.GetQdc());
+                 plot(DD_GSIGNOIS, bar.GetLeftSide().GetSignalToNoiseRatio(),bar.GetQdc() );
+                 plot(DD_GETRIGVSQDC,start.GetQdc(),bar.GetQdc());
+             }
 
-                mVan.Ge[geNum] = geEn;
-            };
-        };
 
-        Wave->Fill();
-    };//End VANDLE
+             */
+
+             //tof vs gammas in damm for testing against root when its working right
+             //Gamma Loops for VANDLE
+             //labr loop for mVan
+             int labrNum;
+             double labrEn;
+             for (vector<ChanEvent *>::const_iterator itlabr3 = labr3Evts.begin();
+                  itlabr3 != labr3Evts.end(); itlabr3++) {
+                 labrNum = (*itlabr3)->GetChanID().GetLocation();
+                 labrEn = (*itlabr3)->GetCalibratedEnergy();
+                 plot(DD_TOFVSHAGRID, labrEn, tof * plotMult_ + 200);
+
+                 tofVLabr_->Fill(labrEn,tof);
+
+                 mVan.LaBr[labrNum] = labrEn;
+             };
+
+             //Nai loop for mVan
+             int naiNum;
+             double naiEn;
+             for (vector<ChanEvent *>::const_iterator itNai = naiEvts.begin();
+                  itNai != naiEvts.end(); itNai++) {
+                 naiNum = (*itNai)->GetChanID().GetLocation();
+                 naiEn = (*itNai)->GetCalibratedEnergy();
+                 plot(DD_TOFVSNAI, naiEn, tof * plotMult_ + 200);
+
+                 tofVNai_->Fill(naiEn,tof);
+
+                 mVan.NaI[naiNum] = naiEn;
+             };
+
+             //ge loop for mVan
+             int geNum;
+             double geEn;
+             for (vector<ChanEvent *>::const_iterator itGe = geEvts.begin();
+                  itGe != geEvts.end(); itGe++) {
+                 geNum = (*itGe)->GetChanID().GetLocation();
+                 geEn = (*itGe)->GetCalibratedEnergy();
+                 plot(DD_TOFVSGE, geEn, tof * plotMult_ + 200);
+
+                 tofVGe_->Fill(geEn,tof);
+
+                 mVan.Ge[geNum] = geEn;
+             };
+         };
+
+         Wave->Fill();
+     };//End VANDLE
 
     sing.eventNum = evtNum;
 
