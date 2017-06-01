@@ -204,7 +204,32 @@ void GlobalsXmlParser::ParseGlobalNode(const pugi::xml_node &node, Globals *glob
     else
         globals->SetHasRawHistogramsDefined(true);
 
-    set<string> knownNodes = {"Revision", "EventWidth", "HasRaw"};
+    if (!node.child("IdealFlightPath").empty()) {
+        std::map<std::string, unsigned int> idealFPs;
+        for (pugi::xml_node_iterator ifpit = node.child("IdealFlightPath").begin();
+             ifpit != node.child("IdealFlightPath").end(); ++ifpit) {
+            std::string type = ifpit->name();
+            for (pugi::xml_node_iterator ifpit2 = node.child("IdealFlightPath").child(ifpit->name()).begin();
+                 ifpit2 !=  node.child("IdealFlightPath").child(ifpit->name()).end(); ++ifpit2) {
+                unsigned int iFlight = ifpit2->attribute("value").as_uint();
+                std::string ts = type + ":" + ifpit2->name();
+                idealFPs.insert(make_pair(ts, iFlight));
+            }
+        }
+        sstream_ << "Ideal Flight Paths :";
+        messenger_.detail(sstream_.str());
+        for (std::map<std::string, unsigned int>::const_iterator FPloop =
+                idealFPs.begin(); FPloop != idealFPs.end(); FPloop++) {
+            sstream_.str("");
+            sstream_ << FPloop->first << " = " << FPloop->second << " cm";
+            messenger_.detail(sstream_.str(), 1);
+        }
+        sstream_.str("");
+    } else{
+        throw invalid_argument(CriticalNodeMessage("IdealFlightPath"));
+    }
+
+    set<string> knownNodes = {"Revision", "EventWidth", "HasRaw","IdealFlightPath"};
     WarnOfUnknownChildren(node, knownNodes);
 }
 

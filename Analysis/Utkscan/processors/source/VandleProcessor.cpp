@@ -263,12 +263,15 @@ void VandleProcessor::AnalyzeBarStarts(void) {
             double tof = bar.GetCorTimeAve() -
                 start.GetCorTimeAve() + cal.GetTofOffset(startLoc);
 
-            double corTof =
+            double barCorTof =
                 CorrectTOF(tof, bar.GetFlightPath(), cal.GetZ0());
+
+            string det = "vandle:" + bar.GetType();
+            double corTof=CorrectTOF(tof,bar.GetFlightPath(),Globals::get()->GetIdealFlightPath(det));
 
             plot(DD_TOFBARS+histTypeOffset, tof*plotMult_+plotOffset_,
                  barPlusStartLoc);
-            plot(DD_CORTOFBARS, corTof*plotMult_+plotOffset_, barPlusStartLoc);
+            plot(DD_CORTOFBARS, barCorTof*plotMult_+plotOffset_, barPlusStartLoc);
 
             if(cal.GetTofOffset(startLoc) != 0) {
                 plot(DD_TQDCAVEVSTOF+histTypeOffset, tof*plotMult_+plotOffset_,
@@ -319,14 +322,18 @@ void VandleProcessor::AnalyzeStarts(void) {
             double tof = bar.GetCorTimeAve() -
                 start.GetWalkCorrectedTime() + cal.GetTofOffset(startLoc);
 
-            double corTof =
+            double barCorTof =
                 CorrectTOF(tof, bar.GetFlightPath(), cal.GetZ0());
+
+            string det = "Vandle:"+bar.GetType();
+            double corTof =CorrectTOF(tof, bar.GetFlightPath(),Globals::get()->GetIdealFlightPath(det));
 
             plot(DD_TOFBARS+histTypeOffset, tof*plotMult_+plotOffset_, barPlusStartLoc);
             plot(DD_TQDCAVEVSTOF+histTypeOffset, tof*plotMult_+plotOffset_,
                  bar.GetQdc()/qdcComp_);
 
-            plot(DD_CORTOFBARS, corTof*plotMult_+plotOffset_, barPlusStartLoc);
+            plot(DD_CORTOFBARS+histTypeOffset, barCorTof*plotMult_+plotOffset_, barPlusStartLoc);
+
             plot(DD_TQDCAVEVSCORTOF+histTypeOffset, corTof*plotMult_+plotOffset_,
                  bar.GetQdc()/qdcComp_);
 

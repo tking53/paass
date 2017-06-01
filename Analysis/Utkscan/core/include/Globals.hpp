@@ -168,6 +168,12 @@ public:
         return (std::make_pair(5, 10));
     }
 
+    unsigned int GetIdealFlightPath(std::string &det) const {
+        if (idealFP_.find(det) != idealFP_.end())
+            return (idealFP_.find(det)->second);
+        return (0);
+    }
+
     ///@return true if any reject region was defined
     bool HasRejectionRegion() const { return !reject_.empty(); }
 
@@ -270,6 +276,11 @@ public:
             const std::map<std::string, std::pair<TrapFilterParameters,
                     TrapFilterParameters> > & a) { trapFiltPars_ = a; }
 
+    ///Sets the Ideal flight path length for different detectors
+    ///@param[in] a : map of a type:subtype string  and distance in cm
+    void SetIdealFlightPath(const std::map<std::string , unsigned int > &a) {
+        idealFP_ = a; }
+
     ///Sets the speed of light in a Big VANDLE module.
     ///@param[in] a : The speed of light in units of cm/ns
     void SetVandleBigSpeedOfLight(const double &a) {
@@ -331,6 +342,7 @@ private:
     std::vector<std::pair<unsigned int, unsigned int> > reject_; ///< Rejection regions
     unsigned int traceDelay_;//!< the trace delay in ns
     std::map<std::string, std::pair<TrapFilterParameters, TrapFilterParameters> > trapFiltPars_; //!<Map containing all of the trapezoidal filter parameters for a given type:subtype
+    std::map<std::string,unsigned int> idealFP_; //!<Map of idealized flight paths for different detectors. (like 100cm for medium or 50 for small etc) NO DEFAULT VALUES
     double vandleBigSpeedOfLight_;//!< speed of light in big VANDLE bars in cm/ns
     double vandleMediumSpeedOfLight_;//!< speed of light in medium VANDLE bars in cm/ns
     double vandleSmallSpeedOfLight_;//!< speed of light in small VANDLE bars in cm/ns
