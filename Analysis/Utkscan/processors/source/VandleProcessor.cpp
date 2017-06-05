@@ -66,6 +66,7 @@ VandleProcessor::VandleProcessor(const std::vector<std::string> &typeList,
     plotMult_ = res;
     plotOffset_ = offset;
     numStarts_ = numStarts;
+    qdcComp_=Globals::get()->GetQdcCompression();
 
     hasSmall_ = hasMed_ = hasBig_ = false;
     for(vector<string>::const_iterator it = typeList.begin();
@@ -79,6 +80,7 @@ VandleProcessor::VandleProcessor(const std::vector<std::string> &typeList,
     }
     if(typeList.size() == 0)
         hasSmall_ = true;
+
 }
 
 void VandleProcessor::DeclarePlots(void) {
