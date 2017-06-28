@@ -206,7 +206,8 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
             unsigned int startLoc = (*itStart).first.first;
             BarDetector start = (*itStart).second;
             double tof = bar.GetCorTimeAve() - start.GetCorTimeAve() + bar.GetCalibration().GetTofOffset(startLoc);
-            double corTof = CorrectTOF(tof, bar.GetFlightPath(), bar.GetCalibration().GetZ0());
+            double BarCorTof = CorrectTOF(tof, bar.GetFlightPath(), bar.GetCalibration().GetZ0());
+            double AvgCorTof = CorrectTOF(tof, bar.GetFlightPath(), 100);
 
 #ifdef useroot
             vandle_subtype=bar.GetType();
@@ -223,6 +224,8 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
             vandle_lQDC=bar.GetLeftSide().GetTraceQdc();
             vandle_rQDC=bar.GetRightSide().GetTraceQdc();
             vandle_TOF=tof;
+            vandle_TOFBar=BarCorTof;
+            vandle_TOFAvg=AvgCorTof;
             vandle_barNum=barLoc;
             vandle_TAvg=bar.GetTimeAverage();
             vandle_Corrected_TAvg=bar.GetCorTimeAve();
@@ -253,7 +256,8 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
 
             data_summary_tree->Fill();
 #endif
-            PlotTofHistograms(tof, corTof, bar.GetQdc(), barLoc * numStarts_ + startLoc, ReturnOffset(bar.GetType()));
+            PlotTofHistograms(tof, BarCorTof, bar.GetQdc(), barLoc * numStarts_ + startLoc, ReturnOffset(bar.GetType
+                    ()));
         }
 }
 
@@ -266,7 +270,8 @@ void VandleProcessor::AnalyzeStarts(const BarDetector &bar, unsigned int &barLoc
             HighResTimingData start = (*itStart).second;
 
             double tof = bar.GetCorTimeAve() - start.GetWalkCorrectedTime() + bar.GetCalibration().GetTofOffset(startLoc);
-            double corTof = CorrectTOF(tof, bar.GetFlightPath(), bar.GetCalibration().GetZ0());
+            double BarCorTof = CorrectTOF(tof, bar.GetFlightPath(), bar.GetCalibration().GetZ0());
+            double AvgCorTof = CorrectTOF(tof, bar.GetFlightPath(), 100);
 
 #ifdef useroot
             vandle_subtype=bar.GetType();
@@ -283,6 +288,8 @@ void VandleProcessor::AnalyzeStarts(const BarDetector &bar, unsigned int &barLoc
             vandle_lQDC=bar.GetLeftSide().GetTraceQdc();
             vandle_rQDC=bar.GetRightSide().GetTraceQdc();
             vandle_TOF=tof;
+            vandle_TOFBar=BarCorTof;
+            vandle_TOFAvg=AvgCorTof;
             vandle_barNum=barLoc;
             vandle_TAvg=bar.GetTimeAverage();
             vandle_Corrected_TAvg=bar.GetCorTimeAve();
@@ -305,7 +312,8 @@ void VandleProcessor::AnalyzeStarts(const BarDetector &bar, unsigned int &barLoc
             data_summary_tree->Fill();
 
 #endif
-            PlotTofHistograms(tof, corTof, bar.GetQdc(), barLoc * numStarts_ + startLoc, ReturnOffset(bar.GetType()));
+            PlotTofHistograms(tof, BarCorTof, bar.GetQdc(), barLoc * numStarts_ + startLoc, ReturnOffset(bar.GetType
+                    ()));
         }
 }
 
