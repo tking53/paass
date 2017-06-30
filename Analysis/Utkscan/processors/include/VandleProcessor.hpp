@@ -98,8 +98,8 @@ public:
     double vandle_rQDC=0;
     double vandle_QDCPos=-500;
     double vandle_TOF=0;
-    double vandle_TOFBar=0;
-    double vandle_TOFAvg=0;
+    double vandle_BarCorTof=0;
+    double vandle_AvgCorTof=0;
     double vandle_lSnR=0;
     double vandle_rSnR=0;
     double vandle_lAmp=0;

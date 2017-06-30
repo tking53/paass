@@ -68,6 +68,8 @@ VandleProcessor::VandleProcessor(const std::vector<std::string> &typeList, const
     data_summary_tree->Branch("vandle_rQDC",&vandle_rQDC);
     data_summary_tree->Branch("vandle_QDCPos",&vandle_QDCPos);
     data_summary_tree->Branch("vandle_TOF",&vandle_TOF);
+    data_summary_tree->Branch("vandle_BarCorTof",&vandle_BarCorTof);
+    data_summary_tree->Branch("vandle_AvgCorTof",&vandle_AvgCorTof);
     data_summary_tree->Branch("vandle_lSnR",&vandle_lSnR);
     data_summary_tree->Branch("vandle_rSnR",&vandle_rSnR);
     data_summary_tree->Branch("vandle_lAmp",&vandle_lAmp);
@@ -224,8 +226,8 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
             vandle_lQDC=bar.GetLeftSide().GetTraceQdc();
             vandle_rQDC=bar.GetRightSide().GetTraceQdc();
             vandle_TOF=tof;
-            vandle_TOFBar=BarCorTof;
-            vandle_TOFAvg=AvgCorTof;
+            vandle_BarCorTof=BarCorTof;
+            vandle_AvgCorTof=AvgCorTof;
             vandle_barNum=barLoc;
             vandle_TAvg=bar.GetTimeAverage();
             vandle_Corrected_TAvg=bar.GetCorTimeAve();
@@ -288,8 +290,8 @@ void VandleProcessor::AnalyzeStarts(const BarDetector &bar, unsigned int &barLoc
             vandle_lQDC=bar.GetLeftSide().GetTraceQdc();
             vandle_rQDC=bar.GetRightSide().GetTraceQdc();
             vandle_TOF=tof;
-            vandle_TOFBar=BarCorTof;
-            vandle_TOFAvg=AvgCorTof;
+            vandle_BarCorTof=BarCorTof;
+            vandle_AvgCorTof=AvgCorTof;
             vandle_barNum=barLoc;
             vandle_TAvg=bar.GetTimeAverage();
             vandle_Corrected_TAvg=bar.GetCorTimeAve();
