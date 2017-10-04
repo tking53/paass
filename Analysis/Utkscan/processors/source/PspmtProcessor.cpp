@@ -26,6 +26,8 @@ namespace dammIds {
         const int DD_POSITION_QDC = 2;
         const int DD_POSITION_TRACE = 3;
         const int DD_PIXEL_MAP = 4;
+        const int DD_MAXTRACE = 5;
+        const int DD_DNODEENERGY = 6;
         const int DD_PIXEL = 11;
     }
 } // namespace dammIds
@@ -37,13 +39,15 @@ void PspmtProcessor::DeclarePlots(void) {
     DeclareHistogram2D(DD_POSITION_ENERGY, SB, SB, "Pos from Raw Energy");
     DeclareHistogram2D(DD_POSITION_QDC, SB, SB, "Pos from QDC");
     DeclareHistogram2D(DD_POSITION_TRACE, SB, SB, "Pos from TraceFilter");
+    DeclareHistogram2D(DD_MAXTRACE, SB, S4, "Max Value of the Trace");
     DeclareHistogram2D(DD_PIXEL_MAP, S5, S5, "Position by pixel");
     DeclareHistogram2D(DD_PIXEL, SB, SB, "Plot of select pixels");
+    DeclareHistogram1D(DD_DNODEENERGY,SE,"Calibrated Energy of the Dynode");
 }
 
 PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
                                const unsigned int &offset,
-                               const double &threshold) :
+                               const double &threshold, const double &dynode_thresh) :
         EventProcessor(OFFSET, RANGE, "PspmtProcessor") {
     if(vd == "SIB064_1018")
         vdtype_ = SIB064_1018;
@@ -54,6 +58,7 @@ PspmtProcessor::PspmtProcessor(const std::string &vd, const double &scale,
     histogramScale_ = scale;
     histogramOffset_ = offset;
     threshold_ = threshold;
+    dthresh_ = dynode_thresh;
 
     ///Associates this processor with the pspmt detector type
     associatedTypes.insert("pspmt");
@@ -74,9 +79,14 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
         return false;
     }
 
+    bool dyThres = false;
     for(vector<ChanEvent *>::const_iterator it = dynodeEvents.begin();
             it != dynodeEvents.end(); it++) {
         plot(DD_QDC, (*it)->GetTrace().GetQdc(), 0);
+        plot(DD_MAXTRACE, (*it)->GetTrace().GetMaxInfo().second, 0);
+        plot(DD_DNODEENERGY, (*it)->GetCalibratedEnergy());
+        if ((*it)->GetCalibratedEnergy() >= dthresh_);
+        dyThres = true;
     }
 
     //Define some maps that we will use to hold the information necessary to
@@ -100,13 +110,14 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             continue;
 
         qdc = (*it)->GetTrace().GetQdc();
-        traceFilter = (*it)->GetTrace().GetQdc();
+        traceFilter = (*it)->GetTrace().GetMaxInfo().second;
 
         if ((*it)->GetChanID().HasTag("xa")) {
             InsertMapValue(m_energy, "xa", energy);
             InsertMapValue(m_qdc, "xa", qdc);
             InsertMapValue(m_trace, "xa", traceFilter);
             plot(DD_QDC, qdc, 1);
+            plot(DD_MAXTRACE, (*it)->GetTrace().GetMaxInfo().second, 1);
         }
 
         if ((*it)->GetChanID().HasTag("xb")) {
@@ -114,6 +125,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             InsertMapValue(m_qdc, "xb", qdc);
             InsertMapValue(m_trace, "xb", traceFilter);
             plot(DD_QDC, qdc, 2);
+            plot(DD_MAXTRACE, (*it)->GetTrace().GetMaxInfo().second, 2);
         }
 
         if ((*it)->GetChanID().HasTag("ya")) {
@@ -121,6 +133,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             InsertMapValue(m_qdc, "ya", qdc);
             InsertMapValue(m_trace, "ya", traceFilter);
             plot(DD_QDC, qdc, 3);
+            plot(DD_MAXTRACE, (*it)->GetTrace().GetMaxInfo().second, 3);
         }
 
         if ((*it)->GetChanID().HasTag("yb")) {
@@ -128,6 +141,7 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             InsertMapValue(m_qdc, "yb", qdc);
             InsertMapValue(m_trace, "yb", traceFilter);
             plot(DD_QDC, qdc, 4);
+            plot(DD_MAXTRACE, (*it)->GetTrace().GetMaxInfo().second, 4);
         }
     }//for(vector<ChanEvent*>::const_iterator it = anodeEvents.begin();
 
@@ -140,18 +154,19 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
     if(m_trace.size() == 4)
         posTrace_ = CalculatePosition(m_trace, vdtype_);
 
-    plot(DD_POSITION_ENERGY, posEnergy_.first*histogramScale_+histogramOffset_,
-         posEnergy_.second*histogramScale_+histogramOffset_);
-    plot(DD_POSITION_QDC, posQdc_.first*histogramScale_+histogramOffset_,
-         posQdc_.second*histogramScale_+histogramOffset_);
-    plot(DD_POSITION_TRACE, posTrace_.first*histogramScale_+histogramOffset_,
-         posTrace_.second*histogramScale_+histogramOffset_);
-    plot(DD_PIXEL_MAP, pixel_.first, pixel_.second);
+    if( dyThres) {
+        plot(DD_POSITION_ENERGY, posEnergy_.first * histogramScale_ + histogramOffset_,
+             posEnergy_.second * histogramScale_ + histogramOffset_);
+        plot(DD_POSITION_QDC, posQdc_.first * histogramScale_ + histogramOffset_,
+             posQdc_.second * histogramScale_ + histogramOffset_);
+        plot(DD_POSITION_TRACE, posTrace_.first * histogramScale_ + histogramOffset_,
+             posTrace_.second * histogramScale_ + histogramOffset_);
+        plot(DD_PIXEL_MAP, pixel_.first, pixel_.second);
 
-    if (pixel_.first == 12)
-        plot(DD_PIXEL, posEnergy_.first*histogramScale_+histogramOffset_,
-	     posEnergy_.second*histogramScale_+histogramOffset_);
-
+        if (pixel_.first == 12)
+            plot(DD_PIXEL, posEnergy_.first * histogramScale_ + histogramOffset_,
+                 posEnergy_.second * histogramScale_ + histogramOffset_);
+    }
 
     EndProcess();
     return true;

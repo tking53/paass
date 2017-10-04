@@ -21,7 +21,7 @@ public:
     ///@param[in] scale : The multiplicative scaling factor
     ///@param[in] offset : The additave offset for the histogram
     PspmtProcessor(const std::string &vd, const double &scale,
-                   const unsigned int &offset, const double &threshold);
+                   const unsigned int &offset, const double &threshold, const double &dynode_thresh);
 
     ///Default Destructor
     ~PspmtProcessor() {};
@@ -119,6 +119,8 @@ private:
     double threshold_; ///< The threshold that the energy calculated by
     ///< the Pixie-16 trapezoidal filter needs to reach
     ///< before we can analyze the signals.
+    double dthresh_; ///< Threshold specific to the dynode
+
 };
 
 #endif // __PSPMTPROCESSOR_HPP__
