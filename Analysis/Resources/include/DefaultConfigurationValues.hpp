@@ -1,6 +1,6 @@
 ///@file DefaultConfigurationValues.cpp
 ///@brief Contains some default values for use in the scan codes in the event that a user forgets something in the
-/// configuration file
+/// configuration file. These default to the values for a VANDLE medium bar
 ///@author S. V. Paulauskas
 ///@date June 3, 2017
 
