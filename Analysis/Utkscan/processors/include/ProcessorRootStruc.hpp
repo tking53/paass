@@ -77,7 +77,8 @@ namespace processor_struct {
     };
     static const LOGIC LOGIC_DEFAULT_STRUCT;
 
-    struct PSPMT { 
+    struct PSPMT {
+        std::vector<unsigned > trace;
         double energy = -999;
         double time = -999;
         TString subtype = "";

@@ -120,6 +120,9 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             PSstruct.time = (*it)->GetTimeSansCfd();
             PSstruct.subtype = (*it)->GetChanID().GetSubtype();
             PSstruct.tag = (*it)->GetChanID().GetGroup();
+            if (!(*it)->GetTrace().empty()){
+                PSstruct.trace =  (*it)->GetTrace();
+            }
             pixie_tree_event_->pspmt_vec_.emplace_back(PSstruct);
             PSstruct = processor_struct::PSPMT_DEFAULT_STRUCT;
         }
@@ -131,6 +134,9 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             PSstruct.time = (*it)->GetTimeSansCfd();
             PSstruct.subtype = (*it)->GetChanID().GetSubtype();
             PSstruct.tag = (*it)->GetChanID().GetGroup();
+            if (!(*it)->GetTrace().empty()){
+                PSstruct.trace =  (*it)->GetTrace();
+            }
             pixie_tree_event_->pspmt_vec_.emplace_back(PSstruct);
             PSstruct = processor_struct::PSPMT_DEFAULT_STRUCT;
         }
@@ -165,6 +171,9 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             PSstruct.time = (*it)->GetTimeSansCfd();
             PSstruct.subtype = (*it)->GetChanID().GetSubtype();
             PSstruct.tag = (*it)->GetChanID().GetGroup();
+            if (!(*it)->GetTrace().empty()){
+                PSstruct.trace =  (*it)->GetTrace();
+            }
             pixie_tree_event_->pspmt_vec_.emplace_back(PSstruct);
             PSstruct = processor_struct::PSPMT_DEFAULT_STRUCT;
         }
@@ -199,6 +208,9 @@ bool PspmtProcessor::PreProcess(RawEvent &event) {
             PSstruct.time = (*it)->GetTimeSansCfd();
             PSstruct.subtype = (*it)->GetChanID().GetSubtype();
             PSstruct.tag = (*it)->GetChanID().GetGroup();
+            if (!(*it)->GetTrace().empty()){
+                PSstruct.trace =  (*it)->GetTrace();
+            }
             pixie_tree_event_->pspmt_vec_.emplace_back(PSstruct);
             PSstruct = processor_struct::PSPMT_DEFAULT_STRUCT;
         }
