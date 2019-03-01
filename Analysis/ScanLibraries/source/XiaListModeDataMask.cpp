@@ -40,6 +40,8 @@ FIRMWARE XiaListModeDataMask::ConvertStringToFirmware(const std::string &type) {
     else if (firmwareNumber ==
              34688) //compare exactly here since nothing higher
         firmware = R34688;
+    else if (firmwareNumber == 35207)
+      firmware = R35207;
     else {
         msg << "XiaListModeDataMask::CovnertStringToFirmware : "
             << "Unrecognized firmware option - " << type << endl;
@@ -98,6 +100,9 @@ XiaListModeDataMask::GetCfdFractionalTimeMask() const {
             case R34688:
                 mask = 0x1FFF0000;
                 break;
+	    case R35207:
+	      mask = 0x1FFF0000;
+                break;
             default:
                 break;
         }
@@ -124,6 +129,10 @@ const {
         case R30981:
         case R34688:
             mask = 0x7FFE0000;
+            bit = 17;
+            break;
+        case R35207:
+	  mask = 0x7FFE0000;
             bit = 17;
             break;
         default:
@@ -201,6 +210,9 @@ XiaListModeDataMask::GetCfdTriggerSourceMask() const {
                 mask = 0xE0000000;
                 bit = 29;
                 break;
+	    case R35207:
+	      mask = 0xE0000000;
+                bit = 29;
             default:
                 break;
         }
@@ -263,6 +275,10 @@ XiaListModeDataMask::GetTraceOutOfRangeFlagMask() const {
             mask = 0x80000000;
             bit = 31;
             break;
+	case R35207:
+            mask = 0x80000000;
+            bit = 31;
+            break;
         default:
             break;
     }
@@ -288,6 +304,9 @@ const {
             break;
         case R34688:
             mask = 0x7FFF0000;
+            break;
+        case R35207:
+	  mask = 0x7FFF0000;
             break;
         default:
             break;
