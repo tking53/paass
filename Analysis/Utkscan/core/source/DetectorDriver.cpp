@@ -306,6 +306,7 @@ int DetectorDriver::ThreshAndCal(ChanEvent *chan, RawEvent &rawev) {
     set<string> tags = chanCfg.GetTags();
     bool hasStartTag = chanCfg.HasTag("start");
     Trace &trace = chan->GetTrace();
+    double moduleFreq = chanCfg.GetModFreq();
 
     RandomInterface *randoms = RandomInterface::get();
 
@@ -329,9 +330,24 @@ int DetectorDriver::ThreshAndCal(ChanEvent *chan, RawEvent &rawev) {
             plot(D_FILTER_ENERGY + id, energy);
         }
 
+        //subtract the 2 time functions. If they are equal (in the same units) then we dont have a CFD 
+        double adcClock = Globals::get()->GetAdcClockInSeconds(moduleFreq);
+        double filterClock = Globals::get()->GetFilterClockInSeconds(moduleFreq);
+        double timeComp = chan->GetTime() - (chan->GetTimeSansCfd() * (filterClock/adcClock));  
         //Saves the time in nanoseconds
-        chan->SetHighResTime((trace.GetPhase() * Globals::get()->GetAdcClockInSeconds() +
-                chan->GetTimeSansCfd() * Globals::get()->GetFilterClockInSeconds()) * 1e9);
+        if( trace.HasValidFitAnalysis()){
+            //Timing from Fitting Analyzer. if we go through the effort of fitting we should use that timing
+            chan->SetHighResTime((trace.GetPhase() * adcClock + chan->GetTimeSansCfd() * filterClock) * 1e9);
+        } else if (chanCfg.HasTag("ocfd")) {
+            // Force use of the onboard CFD sensitive timing even if the cfd wasnt enabled 
+            chan->SetHighResTime(chan->GetTime() * adcClock * 1e9);
+        } else if (timeComp != 0) {
+            //if the cfd was enabled and it fired. 
+            chan->SetHighResTime(chan->GetTime() * adcClock * 1e9);
+        } else {
+            // if we dont have a good fit the phase is 0 so this is equivalent to what was here before.
+            chan->SetHighResTime(chan->GetTimeSansCfd() * filterClock * 1e9);
+        }
 
         //Plot max Value in trace post trace analysis
         plot(DD_TRACE_MAX,trace.GetMaxInfo().second,id);
