@@ -23,41 +23,49 @@
 #include "WaveformAnalyzer.hpp"
 
 //These headers handle processing of specific detector types
-#include "BetaScintProcessor.hpp"
-#include "CloverCalibProcessor.hpp"
 #include "CloverProcessor.hpp"
 #include "CloverFragProcessor.hpp"
 #include "DoubleBetaProcessor.hpp"
 #include "DssdProcessor.hpp"
 #include "ExtTSSenderProcessor.hpp"
 #include "GammaScintProcessor.hpp"
-#include "GeProcessor.hpp"
-#include "Hen3Processor.hpp"
-#include "ImplantSsdProcessor.hpp"
-#include "IonChamberProcessor.hpp"
 #include "LiquidScintProcessor.hpp"
-#include "LitePositionProcessor.hpp"
 #include "LogicProcessor.hpp"
-#include "McpProcessor.hpp"
-#include "NeutronScintProcessor.hpp"
-#include "PositionProcessor.hpp"
 #include "PspmtProcessor.hpp"
 #include "SingleBetaProcessor.hpp"
 #include "RootDevProcessor.hpp"
-#include "TeenyVandleProcessor.hpp"
 #include "TemplateProcessor.hpp"
 #include "VandleProcessor.hpp"
 
 //These headers are for handling experiment specific processing.
-#include "E11027Processor.hpp"
 #include "TemplateExpProcessor.hpp"
-#include "VandleOrnl2012Processor.hpp"
 
 #ifdef useroot //Some processors REQUIRE ROOT to function
-#include "Anl1471Processor.hpp"
-#include "IS600Processor.hpp"
-#include "RootProcessor.hpp"
 #include "TwoChanTimingProcessor.hpp"
+#endif
+
+//These are legacy processors so we will only compile them in if asked to
+#ifdef OLD_PROCESSORS
+#include "BetaScintProcessor.hpp"
+#include "CloverCalibProcessor.hpp"
+#include "GeProcessor.hpp"
+#include "Hen3Processor.hpp"
+#include "ImplantSsdProcessor.hpp"
+#include "IonChamberProcessor.hpp"
+#include "LitePositionProcessor.hpp"
+#include "McpProcessor.hpp"
+#include "NeutronScintProcessor.hpp"
+#include "PositionProcessor.hpp"
+#include "TeenyVandleProcessor.hpp"
+#include "E11027Processor.hpp"
+#include "VandleOrnl2012Processor.hpp"
+
+// Legacy Processors that need ROOT
+    #ifdef useroot
+    #include "Anl1471Processor.hpp"
+    #include "IS600Processor.hpp"
+    #include "RootProcessor.hpp"
+    #endif
 #endif
 
 using namespace std;
@@ -100,16 +108,7 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
         string name = processor.attribute("name").as_string();
 
         messenger_.detail("Loading " + name);
-        if (name == "BetaScintProcessor") {
-            vecProcess.push_back(new BetaScintProcessor(
-                    processor.attribute("gamma_beta_limit").as_double(200.e-9),
-                    processor.attribute("energy_contraction").as_double(1.0)));
-        } else if (name == "CloverCalibProcessor") {
-            vecProcess.push_back(new CloverCalibProcessor(
-                    processor.attribute("gamma_threshold").as_double(1),
-                    processor.attribute("low_ratio").as_double(1),
-                    processor.attribute("high_ratio").as_double(3)));
-        } else if (name == "CloverProcessor") {
+        if (name == "CloverProcessor") {
             ///@TODO This needs to be cleaned. No method should have this
             /// many variables as arguments.
             vecProcess.push_back(new CloverProcessor(
@@ -133,8 +132,7 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
             vecProcess.push_back(new DoubleBetaProcessor());
         } else if (name == "DssdProcessor") {
             vecProcess.push_back(new DssdProcessor());
-              } else if (name == "E11027Processor") {
-            vecProcess.push_back(new E11027Processor());
+        
         }else if (name == "ExtTSSenderProcessor") {
             vecProcess.push_back(new ExtTSSenderProcessor(
                     processor.attribute("type").as_string(""),
@@ -176,29 +174,14 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
             std::vector< std::string > DetTypes = StringManipulation::TokenizeString(
                     processor.attribute("types").as_string("smallhag"), ",");
             vecProcess.push_back(new GammaScintProcessor(GScintArgs, DetTypes, timeScales));
-        } else if (name == "GeProcessor") {
-            vecProcess.push_back(new GeProcessor());
-        } else if (name == "Hen3Processor") {
-            vecProcess.push_back(new Hen3Processor());
-        } else if (name == "ImplantSsdProcessor") {
-            vecProcess.push_back(new ImplantSsdProcessor());
-        } else if (name == "IonChamberProcessor") {
-            vecProcess.push_back(new IonChamberProcessor());
+
         } else if (name == "LiquidScintProcessor") {
             vecProcess.push_back(new LiquidScintProcessor());
-        } else if (name == "LitePositionProcessor") {
-            vecProcess.push_back(new LitePositionProcessor());
         } else if (name == "LogicProcessor") {
             vecProcess.push_back(new LogicProcessor(
                 processor.attribute("double_stop").as_bool(false),
                 processor.attribute("double_start").as_bool(false)
                 ));
-        } else if (name == "McpProcessor") {
-            vecProcess.push_back(new McpProcessor());
-        } else if (name == "NeutronScintProcessor") {
-            vecProcess.push_back(new NeutronScintProcessor());
-        } else if (name == "PositionProcessor") {
-            vecProcess.push_back(new PositionProcessor());
         } else if (name == "PspmtProcessor") {
             vecProcess.push_back(new PspmtProcessor(
                     processor.attribute("vd").as_string("SIB062_0926"),
@@ -212,40 +195,74 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
             ));
         } else if (name =="SingleBetaProcessor"){
             vecProcess.push_back(new SingleBetaProcessor());
-        }else if (name =="RootDevProcessor"){
+        } else if (name =="RootDevProcessor"){
             vecProcess.push_back(new RootDevProcessor());
-        }else if (name == "TeenyVandleProcessor") {
-            vecProcess.push_back(new TeenyVandleProcessor());
         } else if (name == "TemplateProcessor") {
             vecProcess.push_back(new TemplateProcessor());
         }else if (name == "TemplateExpProcessor") {
             vecProcess.push_back(new TemplateExpProcessor());
         }else if (name == "VandleProcessor") {
             vecProcess.push_back(new VandleProcessor(
-                    StringManipulation::TokenizeString(processor.attribute("types").as_string("medium"), ","),
-                    processor.attribute("res").as_double(2.0), processor.attribute("offset").as_double(1000.0),
-                    processor.attribute("NumStarts").as_uint(1), processor.attribute("compression").as_double(1.0),
-                    processor.attribute("qdcmin").as_double(0.0),processor.attribute("tofcut").as_double(-1000.0),processor.attribute("idealfp").as_double(100)));
-        } 
-#ifdef useroot //Certain processors REQUIRE ROOT to actually work
-        else if (name == "Anl1471Processor") {
+                StringManipulation::TokenizeString(processor.attribute("types").as_string("medium"), ","),
+                processor.attribute("res").as_double(2.0), processor.attribute("offset").as_double(1000.0),
+                processor.attribute("NumStarts").as_uint(1), processor.attribute("compression").as_double(1.0),
+                processor.attribute("qdcmin").as_double(0.0),processor.attribute("tofcut").as_double(-1000.0),
+                processor.attribute("idealfp").as_double(100)));
+        }
+#ifdef useroot  //Certain processors REQUIRE ROOT to actually work
+        else if (name == "TwoChanTimingProcessor") {
+            vecProcess.push_back(new TwoChanTimingProcessor());
+        }
+#endif
+#ifdef OLD_PROCESSORS
+        else if (name == "BetaScintProcessor") {
+            vecProcess.push_back(new BetaScintProcessor(
+                processor.attribute("gamma_beta_limit").as_double(200.e-9),
+                processor.attribute("energy_contraction").as_double(1.0)));
+        } else if (name == "CloverCalibProcessor") {
+            vecProcess.push_back(new CloverCalibProcessor(
+                processor.attribute("gamma_threshold").as_double(1),
+                processor.attribute("low_ratio").as_double(1),
+                processor.attribute("high_ratio").as_double(3)));
+        } else if (name == "E11027Processor") {
+            vecProcess.push_back(new E11027Processor());
+        } else if (name == "GeProcessor") {
+            vecProcess.push_back(new GeProcessor());
+        } else if (name == "Hen3Processor") {
+            vecProcess.push_back(new Hen3Processor());
+        } else if (name == "ImplantSsdProcessor") {
+            vecProcess.push_back(new ImplantSsdProcessor());
+        } else if (name == "IonChamberProcessor") {
+            vecProcess.push_back(new IonChamberProcessor());
+        } else if (name == "LitePositionProcessor") {
+            vecProcess.push_back(new LitePositionProcessor());
+        } else if (name == "McpProcessor") {
+            vecProcess.push_back(new McpProcessor());
+        } else if (name == "NeutronScintProcessor") {
+            vecProcess.push_back(new NeutronScintProcessor());
+        } else if (name == "PositionProcessor") {
+            vecProcess.push_back(new PositionProcessor());
+        } else if (name == "TeenyVandleProcessor") {
+            vecProcess.push_back(new TeenyVandleProcessor());
+        } else if (name == "VandleOrnl2012Processor") {
+            vecProcess.push_back(new VandleOrnl2012Processor());
+
+#ifdef useroot
+        } else if (name == "Anl1471Processor") {
             vecProcess.push_back(new Anl1471Processor());
         } else if (name == "IS600Processor") {
             vecProcess.push_back(new IS600Processor());
-        } else if (name == "TwoChanTimingProcessor") {
-            vecProcess.push_back(new TwoChanTimingProcessor());
-        } else if (name == "VandleOrnl2012Processor") {
-            vecProcess.push_back(new VandleOrnl2012Processor());
-        } else if (name == "RootProcessor") { //Must be the last for silly reasons.
+        } else if (name == "RootProcessor") {  //Must be the last for silly reasons.
             vecProcess.push_back(new RootProcessor("tree.root", "tree"));
         }
+#endif
 #endif
         else {
             stringstream ss;
             ss << "DetectorDriverXmlParser: Unknown processor : " << name;
             throw GeneralException(ss.str());
         }
-
+        
         PrintAttributeMessage(processor);
     }
     return vecProcess;
