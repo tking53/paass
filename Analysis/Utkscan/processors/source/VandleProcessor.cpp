@@ -69,6 +69,8 @@ VandleProcessor::VandleProcessor(const std::vector<std::string> &typeList, const
     idealFP_ = idealFP;
     onlyDoubles_ = onlyDoubles;
 
+    cout<<"OnlyDoubles= "<< onlyDoubles_ <<endl;
+
     if(typeList.empty())
         requestedTypes_.insert("small");
     else
