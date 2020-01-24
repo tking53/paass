@@ -44,6 +44,11 @@ bool RootDevProcessor::Process(RawEvent &event) {
         if (Rev == "F") {
             RDstruct.timeSansCfd = (*it)->GetTimeSansCfd() * Globals::get()->GetClockInSeconds((*it)->GetChanID().GetModFreq()) * 1e9;
             RDstruct.time = (*it)->GetTime() * Globals::get()->GetAdcClockInSeconds((*it)->GetChanID().GetModFreq()) * 1e9;
+            if ((*it)->GetTrace().size() >0 ){
+            RDstruct.wcTime = (*it)->GetWalkCorrectedTime();
+            } else {
+                RDstruct.wcTime = (*it)->GetWalkCorrectedTime() * Globals::get()->GetAdcClockInSeconds(((*itStart).second.GetChanID().GetModFreq()));
+            }
         } else {
             RDstruct.timeSansCfd = (*it)->GetTimeSansCfd() * Globals::get()->GetClockInSeconds() * 1e9;
             RDstruct.time = (*it)->GetTime() * Globals::get()->GetAdcClockInSeconds() * 1e9;
