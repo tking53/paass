@@ -80,10 +80,7 @@ public:
     bool GetDammPlots() const { return dammPlots_; }
 
     ///@return the event size in seconds
-    double GetEventLengthInSeconds() const { return eventLengthInSeconds_; }
-
-    ///@return the event width
-    unsigned int GetEventLengthInTicks() const { return eventLengthInTicks_; }
+    double GetEventLengthInNS() const { return eventLengthInNS_; }
 
     ///@return the filter clock in seconds
     double GetFilterClockInSeconds() const { return filterClockInSeconds_; }
@@ -99,6 +96,9 @@ public:
         }
     }
 
+    ///@return the Clock in seconds map
+    std::map<int,double> GetClockInSecondsMap(){return clockTickToSeconds_ ; }
+
     ///@return returns name of specified output file
     std::string GetOutputFileName() const { return outputFilename_; }
 
@@ -107,6 +107,27 @@ public:
 
     ///@return the revision for the data
     std::string GetPixieRevision() const { return revision_; }
+
+    ///Returns the frequency for a given module. This kind of duplicates the ChanID().GetModFreq() but allows us to access this information from the XiaData rather than just from ProcessedXiaData.
+    ///@param[in] a: The module number
+    ///@return That module's frequency.
+    int GetModuleFrequency(const int &a) {
+        int modNum = a;
+        if (mod2freq_.find(modNum) != mod2freq_.end()) {
+            return (mod2freq_.find(modNum)->second);
+        } else {
+            std::cout << "ERROR:: Globals::GetModuleFrequency(): Unknown Module Frequency, using Revision Default" << std::endl;
+            if (GetPixieRevision() == "F") {
+                return 250;
+            } else {
+                return 100;
+            }
+        }
+    };
+
+    ///Returns the module to frequency map
+    ///@return The module Frequency Map
+    std::map<int, int> GetModuleFrequencyMap() {return mod2freq_ ; }
 
     ///@return rejection regions to exclude from scan.
     std::vector<std::pair<unsigned int, unsigned int> > GetRejectionRegions() const { return reject_; }
@@ -138,6 +159,13 @@ public:
     ///@return true if we will define the raw histograms
     bool HasRawHistogramsDefined() const { return hasRawHistogramsDefined_; }
 
+   ///Adds module to the frequency map. 
+    ///@param[in] a: The module number
+    ///@param[in] b: That module's frequency. 
+    void AddToModuleFrequencyMap(const int &a, const int &b){
+        mod2freq_.emplace(a,b);
+    }
+
     ///Sets the Pixie-16 ADC clock speed in seconds.
     ///@param[in] a : The parameter that we are going to set
     void SetAdcClockInSeconds(const double &a) { adcClockInSeconds_ = a; }
@@ -166,11 +194,7 @@ public:
 
     ///Sets the event length in seconds that we will use to create events.
     ///@param[in] a : The parameter that we are going to set
-    void SetEventLengthInSeconds(const double &a) { eventLengthInSeconds_ = a; }
-
-    ///Sets the event length in clock ticks that we will use to create events.
-    ///@param[in] a : The parameter that we are going to set
-    void SetEventLengthInTicks(const unsigned int &a) { eventLengthInTicks_ = a; }
+    void SetEventLengthInNS(const double &a) { eventLengthInNS_ = a; }
 
     ///Sets the Pixie-16 Filter clock value.
     ///@param[in] a : The parameter that we are going to set
@@ -238,12 +262,12 @@ private:
     std::map<int, double> clockTickToSeconds_;                //!< map of frequencies and conversion factors
     std::map<int, double> adcClockTickToSeconds_;             //!< map of frequencies and conversion factors for Adc Ticks->Seconds
     std::map<int, double> filterClockTickToSeconds_;             //!< map of frequencies and conversion factors for Dsp Ticks->Seconds
+    std::map<int, int> mod2freq_;                                //!< module number to frequency map
     double adcClockInSeconds_;                                   //!< adc clock in second
     double clockInSeconds_;                                      //!< the ACQ clock in seconds
     std::string configFile_;                                     //!< The configuration file
     bool dammPlots_;                                             //!< True if we are filling DAMM plots
-    double eventLengthInSeconds_;                                //!< event width in seconds
-    unsigned int eventLengthInTicks_;                            //!< the size of the events
+    double eventLengthInNS_;                                     //!< event width in seconds
     double filterClockInSeconds_;                                //!< filter clock in seconds
     bool hasRawHistogramsDefined_;                               //!< True if we are plotting Raw Histograms
     std::string outputFilename_;                                 //!<Output Filename

@@ -76,6 +76,9 @@ public:
 
     ///@return The value of the trace delay
     unsigned int GetTraceDelayInSamples() const { return traceDelayInSamples_; }
+     
+    ///@return The value of the trace delay in ns
+    unsigned int GetTraceDelayInNs() const { return traceDelayInNs_; }
 
     ///@return The waveform bounds in samples
     std::pair<unsigned int, unsigned int> GetWaveformBoundsInSamples() const { return waveformBoundsInSamples_; }
@@ -135,6 +138,10 @@ public:
     /// Sets the trace delay in units of trace samples
     ///@param[in] a : The value for the trace delay in units of samples.
     void SetTraceDelayInSamples(const unsigned int &a) { traceDelayInSamples_ = a; }
+
+    /// Sets the trace delay in units of trace samples
+    ///@param[in] a : The value for the trace delay in units of ns.
+    void SetTraceDelayInNs(const unsigned int &a) { traceDelayInNs_ = a; }
 
     ///Sets the trigger filter parameters
     ///@param [in] a : the parameters that we want to set
@@ -205,6 +212,7 @@ private:
     std::string group_; ///<Specifies the detector group
     std::set<std::string> tags_; ///< A list of associated tags
     unsigned int traceDelayInSamples_; ///< The trace delay to help find the location of waveforms in traces
+    unsigned int traceDelayInNs_; ///< The trace delay in Ns, used to correct the HighResTiming Calculation.
     TrapFilterParameters triggerFilterParameters_; ///< Parameters to use for trigger filter calculations
     std::string type_; ///< Specifies the detector type
     std::pair<unsigned int, unsigned int> waveformBoundsInSamples_; ///< The waveform range for the channel

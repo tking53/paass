@@ -45,7 +45,7 @@ public:
     /// Return the number of raw events read from the file.
     unsigned int GetNumRawEvents() { return numRawEvt; }
 
-    /// Return the width of the raw event window in pixie16 clock ticks.
+    /// Return the width of the raw event window in ns
     double GetEventWidth() { return eventWidth_; }
 
     /// Return the time of the first fired channel event.
@@ -56,6 +56,28 @@ public:
 
     /// Get the stop time of the current raw event.
     double GetEventStopTime() { return eventStartTime + eventWidth_; }
+
+    ///Returns the frequency for a given module. This kind of duplicates the ChanID().GetModFreq() but allows us to access this information from the XiaData rather than just from ProcessedXiaData.
+    ///@param[in] a: The module number
+    ///@return That module's frequency.
+    int GetModuleFrequency(const int &a) {
+        if (maskMap_.find(a) != maskMap_.end()) {
+            return (maskMap_.find(a)->second.second);
+        } else {
+            return -1;
+        }
+    };
+
+    ///Returns the frequency for a given module. This kind of duplicates the ChanID().GetModFreq() but allows us to access this information from the XiaData rather than just from ProcessedXiaData.
+    ///@param[in] a: The module frequency
+    ///@return The right DSP tick to ns convertion.
+    double GetTickToNsConstant(const int &a) {
+        if (tick_to_ns.find(a) != tick_to_ns.end()) {
+            return (tick_to_ns.find(a)->second * 1e9);
+        } else {
+            return -1;
+        }
+    };
 
     /// Get the time of the first xia event in the raw event.
     double GetRealStartTime() { return realStartTime; }
@@ -69,8 +91,11 @@ public:
     /// Toggle debug mode on / off.
     bool SetDebugMode(bool state_ = true) { return (debug_mode = state_); }
 
-    /// Set the width of events in pixie16 clock ticks.
+    /// Set the width of events ns. 
     void SetEventWidth(double width) { eventWidth_ = width; }
+
+    ///Set the module to frequency map that was parsed from the MAP node.
+    void SetTickToSecondMap(const std::map<int,double> &a){ tick_to_ns = a; }
 
     void InitializeDataMask(const std::string &firmware, const unsigned int &frequency = 0);
 
@@ -108,6 +133,8 @@ protected:
     unsigned int maxModuleNumberInFile_; ///< The maximum module number that we've encountered in the data file.
     std::deque<XiaData *> rawEvent; ///< The list of all events in the event window.
     bool running; ///< True if the scan is running.
+
+    std::map<int,double> tick_to_ns; // map of conversion factors from ticks to ns
 
     /** Process all events in the event list.
       * \param[in]  addr_ Pointer to a ScanInterface object. Unused by default.

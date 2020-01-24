@@ -47,6 +47,8 @@ void MapNodeXmlParser::ParseNode(DetectorLibrary *lib) {
         int module_freq = module.attribute("frequency").as_int(globalModFreq);
         double module_TdelayNs = module.attribute("TraceDelay").as_double(globalTraceDelay);
 
+        Globals::get()->AddToModuleFrequencyMap(module_number,module_freq);
+
         if (module_number < 0) {
             sstream_ << "MapNodeXmlParser::ParseNode : User requested illegal module number (" << module_number
                      << ") in configuration file.";
@@ -245,7 +247,7 @@ void MapNodeXmlParser::ParseTraceNode(const pugi::xml_node &node, ChannelConfigu
     double TraceDelay = node.attribute("delay").as_double(mod_TD);
     double TDsample= TraceDelay/((1.0/((double )mod_freq * pow(10.0, 6.0)))*pow(10.0,9.0));
 
-
+    config.SetTraceDelayInNs((unsigned int)TraceDelay);
     config.SetTraceDelayInSamples((unsigned int) TDsample);
 
     if(isVerbose) {

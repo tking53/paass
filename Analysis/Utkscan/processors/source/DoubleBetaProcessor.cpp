@@ -91,8 +91,8 @@ bool DoubleBetaProcessor::PreProcess(RawEvent &event) {
             DBstruc.detNum = barNum;
             DBstruc.timeAvg = (*it).second.GetTimeAverage();
             DBstruc.timeDiff = (*it).second.GetTimeDifference();
-            DBstruc.timeL = (*it).second.GetLeftSide().GetTimeSansCfd() * Globals::get()->GetClockInSeconds(modulefreq) * 1e9; //store ns;
-            DBstruc.timeR = (*it).second.GetRightSide().GetTimeSansCfd() * Globals::get()->GetClockInSeconds(modulefreq) * 1e9; //store ns;
+            DBstruc.timeL = (*it).second.GetLeftSide().GetHighResTimeInNs(); 
+            DBstruc.timeR = (*it).second.GetRightSide().GetHighResTimeInNs();
             DBstruc.barQdc = (*it).second.GetQdc();
             DBstruc.tMaxValR = (*it).second.GetRightSide().GetMaximumValue();
             DBstruc.tMaxValL = (*it).second.GetLeftSide().GetMaximumValue();

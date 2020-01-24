@@ -122,8 +122,7 @@ public:
 
 
     ///@return The unique ID of the channel.
-    ///We can have a maximum of 208 channels in a crate, the first module (#0) is always in the second slot of the crate, and
-    /// we always have 16 channels
+    ///We can have a maximum of 208 channels in a crate, the first module (#0) is always in the second slot of the crate, and we always have 16 channels
     unsigned int GetId() const { return crateNum_ * 208 + GetModuleNumber() * 16 + chanNum_; }
 
     ///@return the module number

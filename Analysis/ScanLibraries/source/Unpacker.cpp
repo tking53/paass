@@ -31,7 +31,7 @@ void clearDeque(deque<XiaData *> &list) {
     }
 }
 
-///Scan the event list and sort it by timestamp.
+///Scan the event list and sort it by timestamp. This time orders each module individually so CompareTime is ok as is
 /// @return Nothing.
 void Unpacker::TimeSort() {
     for (vector<deque<XiaData *> >::iterator iter = eventList.begin(); iter != eventList.end(); iter++)
@@ -52,7 +52,7 @@ bool Unpacker::BuildRawEvent() {
         // The first event time will be the minimum of these first components.
         if (!GetFirstTime(firstTime))
             return false;
-        std::cout << "BuildRawEvent: First event time is " << firstTime << " clock ticks.\n";
+        std::cout << "BuildRawEvent: First event time is " << firstTime << " ns.\n";
         eventStartTime = firstTime;
     } else {
         // Move the event window forward to the next valid channel fire.
@@ -64,6 +64,8 @@ bool Unpacker::BuildRawEvent() {
     realStopTime = eventStartTime;
 
     unsigned int mod, chan;
+    int freq;
+    double tick_conversion_const;
     string type, subtype, tag;
     XiaData *current_event = NULL;
 
@@ -77,6 +79,15 @@ bool Unpacker::BuildRawEvent() {
             current_event = iter->front();
             mod = current_event->GetModuleNumber();
             chan = current_event->GetChannelNumber();
+            freq = GetModuleFrequency(mod);
+            tick_conversion_const = GetTickToNsConstant(freq);
+            if (freq == -1 || tick_conversion_const == -1 ){
+                cout << "ERROR: Unpacker::BuildRawEvent: Unknown frequency or tick to time conversion constant: mod="<<mod<<"  tick="<<tick_conversion_const <<endl;
+                delete current_event;
+                iter->pop_front();
+                continue; // skip this det event because we wont be able to build the events correctly without the time constants
+
+            }
 
             if (mod > MAX_PIXIE_MOD ||
                 chan > MAX_PIXIE_CHAN) { // Skip this channel
@@ -87,12 +98,12 @@ bool Unpacker::BuildRawEvent() {
                 continue;
             }
 
-            double currtime = current_event->GetTimeSansCfd();
+            double currtime = current_event->GetTimeSansCfd() * tick_conversion_const;
 
             // Check for backwards time-skip. This is un-handled currently and needs fixed CRT!!!
             if (currtime < eventStartTime)
                 cout << "BuildRawEvent: Detected backwards time-skip from start=" << eventStartTime << " to "
-                     << current_event->GetTimeSansCfd() << "???\n";
+                     << current_event->GetTimeSansCfd() * tick_conversion_const << "???\n";
 
             // If the time difference between the current and previous event is
             // larger than the event width, finalize the current event, otherwise
@@ -166,10 +177,16 @@ bool Unpacker::GetFirstTime(double &time) {
 
     time = std::numeric_limits<double>::max();
     for (std::vector<std::deque<XiaData *> >::iterator iter = eventList.begin(); iter != eventList.end(); iter++) {
-        if (iter->empty())
+        if (iter->empty()){
             continue;
-        if (iter->front()->GetTimeSansCfd() < time)
-            time = iter->front()->GetTimeSansCfd();
+        }
+        double timeConversion = GetTickToNsConstant(GetModuleFrequency(iter->front()->GetModuleNumber()));
+        
+        if (iter->front()->GetTimeSansCfd() * timeConversion < time){
+           //! debugin
+            // std::cout<< "timC= " << timeConversion << "   modNum="<< iter->front()->GetModuleNumber()<< "   time(ns)="<< iter->front()->GetTimeSansCfd()*timeConversion<<"   time(tick)="<< iter->front()->GetTimeSansCfd()<<std::endl;
+            time = iter->front()->GetTimeSansCfd() * timeConversion;
+        }
     }
 
     return true;

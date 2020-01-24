@@ -55,7 +55,8 @@ bool UtkScanInterface::Initialize(string prefix_) {
         throw;
     }
 
-    unpacker_->SetEventWidth(Globals::get()->GetEventLengthInTicks());
+    unpacker_->SetEventWidth(Globals::get()->GetEventLengthInNS());
+    unpacker_->SetTickToSecondMap(Globals::get()->GetClockInSecondsMap());
     Globals::get()->SetOutputFilename(GetOutputFilename());
     Globals::get()->SetOutputPath(GetOutputPath());
 

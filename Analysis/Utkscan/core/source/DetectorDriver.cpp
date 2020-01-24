@@ -257,7 +257,7 @@ void DetectorDriver::ProcessEvent(RawEvent &rawev) {
 void DetectorDriver::DeclarePlots() {
     try {
         DeclareHistogram1D(D_HIT_SPECTRUM, S7, "channel hit spectrum");
-        DeclareHistogram2D(DD_RUNTIME_SEC, SE, S6, "run time - s");
+        DeclareHistogram2D(DD_RUNTIME_SEC, SE, S7, "run time - s");
         DeclareHistogram2D(DD_RUNTIME_MSEC, SE, S7, "run time - ms");
         DeclareHistogram1D(D_INTERNAL_TS_CHECK, SB, "Time Diff between ETS1 and ES2 +1000. 100=BAD");
         DeclareHistogram1D(D_NUMBER_OF_EVENTS, S4, "event counter");
@@ -355,10 +355,12 @@ int DetectorDriver::ThreshAndCal(ChanEvent *chan, RawEvent &rawev) {
             energy = filteredEnergies.front();
             plot(D_FILTER_ENERGY + id, energy);
         }
-
+        int modFreq = chanCfg.GetModFreq();
+        double trace_delay = chanCfg.GetTraceDelayInNs();
+        double evt_ns = chan->GetTimeSansCfd() * Globals::get()->GetFilterClockInSeconds(modFreq) * 1e9;
+        double phase_ns = trace.GetPhase() * Globals::get()->GetAdcClockInSeconds(modFreq) * 1e9 ;
         //Saves the time in nanoseconds
-        chan->SetHighResTime((trace.GetPhase() * Globals::get()->GetAdcClockInSeconds() +
-                chan->GetTimeSansCfd() * Globals::get()->GetFilterClockInSeconds()) * 1e9);
+        chan->SetHighResTime( evt_ns + phase_ns - trace_delay);
 
         //Plot max Value in trace post trace analysis
         plot(DD_TRACE_MAX,trace.GetMaxInfo().second,id);
@@ -422,7 +424,7 @@ std::set<std::string> DetectorDriver::GetProcessorList() {
 }
 
 void DetectorDriver::FillLogicStruc() { //This should be called away from the event loops. (near where it fills the filenames)
-//TODO We need to make this sensative to running on something other than a 250MHz, also in the logic processor plotting its self
+//TODO We need to make this sensetive to running on something other than a 250MHz, also in the logic processor plotting its self
     double convertTimeNS = Globals::get()->GetClockInSeconds() * 1.0e9; // converstion factor from DSP TICKs to NS
    
     if(TreeCorrelator::get()->checkPlace("Beam")){

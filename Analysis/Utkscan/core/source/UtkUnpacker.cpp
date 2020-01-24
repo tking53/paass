@@ -29,7 +29,7 @@ UtkUnpacker::~UtkUnpacker() {
 
 /// This method initializes the DetectorLibrary and DetectorDriver classes so
 /// that we can begin processing the events. We take special action on the
-/// first event so that we can handle somethings poperly. Then we processes
+/// first event so that we can handle somethings properly. Then we processes
 /// all channels in the event that we have not been told to ignore. The
 /// rejection regions that are defined in the XML file are used here to
 /// ignore chunks of data. We also make some calls to various other private
@@ -47,6 +47,8 @@ void UtkUnpacker::ProcessRawEvent() {
     static struct tms systemTimes;
     static double lastTimeOfPreviousEvent;
     static unsigned int eventCounter = 0;
+    int mod_freq = GetModuleFrequency(rawEvent.front()->GetModuleNumber());
+    double tick_to_ns = GetTickToNsConstant(mod_freq);
 
     if (eventCounter == 0)
         InitializeDriver(driver, detectorLibrary, rawev, systemStartTime);
@@ -54,7 +56,7 @@ void UtkUnpacker::ProcessRawEvent() {
         PrintProcessingTimeInformation(systemStartTime, times(&systemTimes), GetEventStartTime(), eventCounter);
 
     if (Globals::get()->HasRejectionRegion()) {
-        double eventTime = (GetEventStartTime() - GetFirstTime()) * Globals::get()->GetClockInSeconds();
+        double eventTime = (GetEventStartTime() - GetFirstTime()) * tick_to_ns;
         vector <pair<unsigned int, unsigned int>> rejectRegions = Globals::get()->GetRejectionRegions();
 
         for (vector<pair<unsigned int, unsigned int> >::iterator region = rejectRegions.begin();
@@ -63,9 +65,9 @@ void UtkUnpacker::ProcessRawEvent() {
                 return;
     }
 
-    driver->plot(D_EVENT_GAP, (GetRealStopTime() - lastTimeOfPreviousEvent) * Globals::get()->GetClockInSeconds() * 1e9);
-    driver->plot(D_BUFFER_END_TIME, GetRealStopTime() * Globals::get()->GetClockInSeconds() * 1e9);
-    driver->plot(D_EVENT_LENGTH, (GetRealStopTime() - GetRealStartTime()) * Globals::get()->GetClockInSeconds() * 1e9);
+    driver->plot(D_EVENT_GAP, (GetRealStartTime() - lastTimeOfPreviousEvent) );
+    driver->plot(D_BUFFER_END_TIME, GetRealStopTime() );
+    driver->plot(D_EVENT_LENGTH, GetRealStopTime() - GetRealStartTime());
     driver->plot(D_EVENT_MULTIPLICITY, rawEvent.size());
 
     //loop over the list of channels that fired in this event
@@ -124,16 +126,25 @@ void UtkUnpacker::ProcessRawEvent() {
 /// (milli)second of time.
 void UtkUnpacker::RawStats(XiaData *event_, DetectorDriver *driver) {
     int id = event_->GetId();
+    int current_module_frequency = Globals::get()->GetModuleFrequency(event_->GetModuleNumber());
+    double tick_to_ns; 
+    if (Globals::get()->GetPixieRevision() == "F"){
+        
+        tick_to_ns = GetTickToNsConstant(current_module_frequency);
+    } else {
+        tick_to_ns = GetTickToNsConstant(100);
+    }
     static const int specNoBins = SE;
     static double runTimeSecs = 0, remainNumSecs = 0;
     static double runTimeMsecs = 0, remainNumMsecs = 0;
     static int rowNumSecs = 0, rowNumMsecs = 0;
 
-    runTimeSecs = (event_->GetTimeSansCfd() - GetFirstTime()) * Globals::get()->GetClockInSeconds();
-    rowNumSecs = int(runTimeSecs / specNoBins);
-    remainNumSecs = runTimeSecs - rowNumSecs * specNoBins;
+    runTimeMsecs = ((event_->GetTimeSansCfd() * tick_to_ns) - GetFirstTime()) * 1e-6;
+    runTimeSecs = runTimeMsecs *1e-3 ;
 
-    runTimeMsecs = runTimeSecs * 1000;
+    rowNumSecs = int(runTimeSecs / specNoBins);
+    remainNumSecs = runTimeSecs - (rowNumSecs * specNoBins);
+
     rowNumMsecs = int(runTimeMsecs / specNoBins);
     remainNumMsecs = runTimeMsecs - rowNumMsecs * specNoBins;
 

@@ -46,7 +46,7 @@ void WaveformAnalyzer::Analyze(Trace &trace, const ChannelConfiguration &cfg) {
     //First we calculate the position of the maximum.
     pair<unsigned int, double> max;
     try {
-        max = TraceFunctions::FindMaximum(trace, cfg.GetTraceDelayInSamples());
+        max = TraceFunctions::FindMaximum(trace, cfg.GetTraceDelayInSamples() + range.second);
     } catch (range_error &ex) {
         trace.SetHasValidWaveformAnalysis(false);
         cout << "WaveformAnalyzer::Analyze - " << ex.what() << endl;
@@ -83,15 +83,16 @@ void WaveformAnalyzer::Analyze(Trace &trace, const ChannelConfiguration &cfg) {
         //Also if the avg baseline is lower than 10 ADC units (for any bit resolution),
         // this is also a sign of a bad trace capture.
         
-        static const double extremeBaselineVariation = 0.15 * baseline.first; //Checking for an std of 15% of the avg baseline (this way we are sensitive to the different bit resolutions)
+        double extremeBaselineVariation = 0.2 * baseline.first; //Checking for an std of 15% of the avg baseline (this way we are sensitive to the different bit resolutions)
         if (baseline.second >= extremeBaselineVariation || baseline.first <= 10) {
             extremeBaselineRejectCounter_++;
             trace.SetHasValidWaveformAnalysis(false);
             trace.SetBaseline(baseline);
             trace.SetMax(max);
-            if (extremeBaselineRejectCounter_ % 10000 == 0){
+            // if (extremeBaselineRejectCounter_ % 10000 == 0){
                 cout << "WaveformAnalyzer::Analyze - Rejected " << extremeBaselineRejectCounter_ << " traces for an Extreme Baseline" << endl;
-            }
+                cout<< "WA:: base= "<<baseline.first<<" std::"<<baseline.second<<"  cutoff="<<extremeBaselineVariation<<endl;
+            // }
 
             EndAnalyze();
             return;

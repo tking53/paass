@@ -73,10 +73,11 @@ string GlobalsXmlParser::ParseDescriptionNode(const pugi::xml_node &node) {
 void GlobalsXmlParser::ParseGlobalNode(const pugi::xml_node &node, Globals *globals) {
     if (!node.child("Revision").empty()) {
         string revision = node.child("Revision").attribute("version").as_string();
-
+        globals->SetRevision(revision);
         if (revision == "A" || revision == "D") {
             globals->SetAdcClockInSeconds(10e-9);
             globals->SetClockInSeconds(10e-9);
+            globals->SetClockInSeconds(100,10e-9); //add a single value to the conversion map for the revD, for the unpacker
             globals->SetFilterClockInSeconds(10e-9);
         } else if (revision == "F") {
             // Users of mixed crates are expected to pass the correct freq to the Get...Clock() functions
@@ -103,13 +104,12 @@ void GlobalsXmlParser::ParseGlobalNode(const pugi::xml_node &node, Globals *glob
         throw invalid_argument(CriticalNodeMessage("Revision"));
 
     if (!node.child("EventWidth").empty()) {
-        double eventLengthInSeconds = Conversions::ConvertSecondsWithPrefix(
+        double eventLengthinNS = Conversions::ConvertNanoSecondsWithPrefix(
                 node.child("EventWidth").attribute("value").as_double(0),
                 node.child("EventWidth").attribute("unit").as_string("None"));
-        globals->SetEventLengthInSeconds(eventLengthInSeconds);
-        globals->SetEventLengthInTicks((unsigned int) (eventLengthInSeconds / globals->GetClockInSeconds()));
-        sstream_ << "Event width: " << eventLengthInSeconds * 1e6 << " us" << ", i.e. "
-                 << eventLengthInSeconds / globals->GetClockInSeconds() << " pixie16 clock ticks.";
+        globals->SetEventLengthInNS(eventLengthinNS);
+        //globals->SetEventLengthInTicks((unsigned int) (eventLengthInSeconds / globals->GetClockInSeconds()));
+        sstream_ << "Event width: " << eventLengthinNS  << " ns";
         messenger_.detail(sstream_.str());
         sstream_.str("");
     } else

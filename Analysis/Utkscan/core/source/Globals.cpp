@@ -56,8 +56,8 @@ void Globals::InitializeMemberVariables() {
     sysClockFreqInHz_ = sysconf(_SC_CLK_TCK);
     hasRawHistogramsDefined_ = true;
     outputFilename_ = outputPath_ = revision_ = "";
-    eventLengthInTicks_ = 0;
-    adcClockInSeconds_ = clockInSeconds_ = eventLengthInSeconds_ =
+    eventLengthInNS_ = 0;
+    adcClockInSeconds_ = clockInSeconds_ = 
     filterClockInSeconds_ = vandleBigSpeedOfLight_ =
     vandleMediumSpeedOfLight_ = vandleSmallSpeedOfLight_ = 0;
 }
