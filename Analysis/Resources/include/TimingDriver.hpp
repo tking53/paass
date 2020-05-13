@@ -49,6 +49,14 @@ public:
                                   const std::pair<double, double> baseline) {
         return 0.0;
     }
+    
+    ///@Brief Overload of the Calculate phase method to allow for tuple based pars, and taking the real trace
+    //This particular overload is for the newish PixieCfd method, which should work like the PolyCfd but without the dependancy on the Trace max.
+    /// We do this since we cannot template a virtual method.
+    virtual double CalculatePhase(const std::vector<double> &data, const std::tuple<double, double, double> &pars,
+                                  const std::pair<unsigned int, unsigned int> &range, const std::pair<double, double> baseline) {
+        return 0.0;
+    }
 
     /// @return the amplitude from fits
     virtual double GetAmplitude(void) { return 0.0; }

@@ -1,6 +1,6 @@
 #@author S. V. Paulauskas
 #Set the utility sources that we will make a lib out of
-set(ResourceSources PolynomialCfd.cpp TraditionalCfd.cpp)
+set(ResourceSources PolynomialCfd.cpp TraditionalCfd.cpp PixieCfd.cpp)
 
 if (PAASS_USE_GSL)
     if (${GSL_VERSION} GREATER 1.9)
