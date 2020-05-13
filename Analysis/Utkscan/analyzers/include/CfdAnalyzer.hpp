@@ -31,6 +31,7 @@ class CfdAnalyzer : public TraceAnalyzer {
 
    private:
     std::set<std::string> ignoredTypes_;
+    bool tuplePars_;
     TimingDriver *driver_;
 };
 
