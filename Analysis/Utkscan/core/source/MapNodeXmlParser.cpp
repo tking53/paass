@@ -7,9 +7,9 @@
 #include <cstring>
 #include "cmath"
 
-#include "DefaultConfigurationValues.hpp"
 #include "HelperFunctions.hpp"
 #include "MapNodeXmlParser.hpp"
+
 #include "StringManipulationFunctions.hpp"
 #include "TreeCorrelator.hpp"
 #include "XmlInterface.hpp"
@@ -17,6 +17,8 @@
 using namespace std;
 
 void MapNodeXmlParser::ParseNode(DetectorLibrary *lib) {
+    DefaultConfigs_ = new DefaultDetectorConfig();
+    DefaultConfigs_->Initialize();
     pugi::xml_node map = XmlInterface::get()->GetDocument()->child("Configuration").child("Map");
 
     if (!map)
@@ -104,8 +106,7 @@ void MapNodeXmlParser::ParseNode(DetectorLibrary *lib) {
                 chanCfg.SetLocation(channel.attribute("location").as_uint());
 
             if (isVerbose)
-                sstream_ << "Channel " << channelNumber << " = " << chanCfg.GetType() << ":" << chanCfg.GetSubtype()
-                         << ", Location = " << chanCfg.GetLocation();
+                sstream_ << "Channel " << channelNumber << " = " << chanCfg.GetType() << ":" << chanCfg.GetSubtype() << ":" << chanCfg.GetGroup() << ", Location = " << chanCfg.GetLocation();
 
             string ch_tags = channel.attribute("tags").as_string("None");
             if (ch_tags != "None") {
@@ -120,32 +121,31 @@ void MapNodeXmlParser::ParseNode(DetectorLibrary *lib) {
                 sstream_.str("");
             }
 
-            bool isVandle = false;
-            if (chanCfg.GetType()=="vandle")
-                isVandle = true;
-
+            bool hasTypeDefaults_ = false;
+            if ( DefaultConfigs_->HasTypeDefaults(chanCfg.GetType()) )
+                hasTypeDefaults_ = true;
 
             if (channel.child("Calibration").text())
                 ParseCalibrations(channel.child("Calibration"), chanCfg, isVerbose);
             else if (isVerbose)
                 messenger_.detail("This channel has no calibration associated with it.", 2);
 
-            if (channel.child("Cfd") || isVandle)
+            if (channel.child("Cfd") || hasTypeDefaults_)
                 ParseCfdNode(channel.child("Cfd"), chanCfg, isVerbose);
             else if (isVerbose)
                 messenger_.detail("Using default CFD settings for this channel.", 2);
 
-            if (channel.child("Filter"))
+            if (channel.child("Filter") || hasTypeDefaults_)
                 ParseFilterNode(channel.child("Filter"), chanCfg, isVerbose);
             else if (isVerbose)
                 messenger_.detail("Using default filter settings for this channel.", 2);
 
-            if (channel.child("Fit") || isVandle)
+            if (channel.child("Fit") || hasTypeDefaults_)
                 ParseFittingNode(channel.child("Fit"), chanCfg, isVerbose);
             else if (isVerbose)
                 messenger_.detail("Using default fitter settings for this channel.", 2);
 
-            if (channel.child("Trace") || isVandle )
+            if (channel.child("Trace") || hasTypeDefaults_ )
                 ParseTraceNode(channel.child("Trace"), chanCfg, module_freq, module_TdelayNs, isVerbose);
             else if (isVerbose)
                 messenger_.detail("Using default trace settings for this channel.", 2);
@@ -223,53 +223,64 @@ void MapNodeXmlParser::ParseCfdNode(const pugi::xml_node &node, ChannelConfigura
 ///This method parses the fitting node. There are only two free parameters at the moment. The main part of this node
 /// is the fitting parameters. These parameters are critical to the function of the software. If the fitting node is
 /// present then the Parameters node must also be.
-void MapNodeXmlParser::ParseFittingNode(const pugi::xml_node &node, ChannelConfiguration &config,
-                                        const bool &isVerbose) {
-    config.SetFittingParameters(make_pair(node.attribute("beta").as_double(DefaultConfig::fitBeta),
-                                          node.attribute("gamma").as_double(DefaultConfig::fitGamma)));
+void MapNodeXmlParser::ParseFittingNode(const pugi::xml_node &node, ChannelConfiguration &config, const bool &isVerbose) {
+    auto DefConfig_ = DefaultConfigs_->GetTypeConfig(config.GetType());
+    string subtypeKey = config.GetSubtype() + ":" + config.GetGroup();
+    config.SetFittingParameters(make_pair(node.attribute("beta").as_double(DefConfig_->GetDefaultFitBeta(subtypeKey)),
+                                          node.attribute("gamma").as_double(DefConfig_->GetDefaultFitGamma(subtypeKey))));
+
+    if (isVerbose) {
+        sstream_.str("");
+        sstream_ << "Fit Beta = " << config.GetFittingParameters().first;
+        sstream_ << "   Fit Gamma = " << config.GetFittingParameters().second;
+        messenger_.detail(sstream_.str(), 2);
+        sstream_.str("");
+    }
 }
 
 ///This node parses the Trace node. This node contains all of the information necessary for the users to do trace
 /// analysis. The only critical node here is the WaveformRange node. If the Trace node exists then this node must
 /// also exist.
-void MapNodeXmlParser::ParseTraceNode(const pugi::xml_node &node, ChannelConfiguration &config, const int &mod_freq,
-                                      const double &mod_TD,const bool &isVerbose) {
-
+void MapNodeXmlParser::ParseTraceNode(const pugi::xml_node &node, ChannelConfiguration &config, const int &mod_freq, const double &mod_TD, const bool &isVerbose) {
+    auto DefConfig_ = DefaultConfigs_->GetTypeConfig(config.GetType());
+    string subtypeKey = config.GetSubtype() + ":" + config.GetGroup();
     config.SetDiscriminationStartInSamples(node.attribute("DiscriminationStart").as_uint(DefaultConfig::discrimStart));
     config.SetBaselineThreshold(node.attribute("baselineThreshold").as_double(DefaultConfig::baselineThreshold));
-    config.SetWaveformBoundsInSamples(make_pair(node.attribute("RangeLow").as_uint(DefaultConfig::waveformLow),
-                                                node.attribute("RangeHigh").as_uint(DefaultConfig::waveformHigh)));
+    config.SetWaveformBoundsInSamples(
+        make_pair(node.attribute("RangeLow").as_uint(DefConfig_->GetDefaultTraceWaveLow(subtypeKey)),
+                  node.attribute("RangeHigh").as_uint(DefConfig_->GetDefaultTraceWaveHigh(subtypeKey))));
 
-        ///since the frequency is input as a normal integer we must convert it to the correct value (250 -> 250 MHz),
-        ///before we can use it to convert to the # of samples
+    ///since the frequency is input as a normal integer we must convert it to the correct value (250 -> 250 MHz),
+    ///before we can use it to convert to the # of samples
     double TraceDelay = node.attribute("delay").as_double(mod_TD);
-    double TDsample= TraceDelay/((1.0/((double )mod_freq * pow(10.0, 6.0)))*pow(10.0,9.0));
+    double TDsample = TraceDelay / ((1.0 / ((double)mod_freq * pow(10.0, 6.0))) * pow(10.0, 9.0));
 
+    config.SetTraceDelayInSamples((unsigned int)TDsample);
 
-    config.SetTraceDelayInSamples((unsigned int) TDsample);
-
-    if(isVerbose) {
+    if (isVerbose) {
         sstream_.str("");
         sstream_ << "Trace Delay (ns)= " << TraceDelay;
         sstream_ << "   Trace Delay (sample)= " << TDsample;
+        sstream_ << "   RangeLow= " << config.GetWaveformBoundsInSamples().first;
+        sstream_ << "   RangeHigh= " << config.GetWaveformBoundsInSamples().second;
         messenger_.detail(sstream_.str(), 2);
         sstream_.str("");
     }
-
 }
 
 ///This node parses the Trace node. This node contains all of the information
 /// necessary for the users to do trace analysis. The only critical node here
 /// is the WaveformRange node. If the Trace node exists then this node must
 /// also exist.
-void MapNodeXmlParser::ParseFilterNode(const pugi::xml_node &node, ChannelConfiguration &config,
-                                       const bool &isVerbose) {
+void MapNodeXmlParser::ParseFilterNode(const pugi::xml_node &node, ChannelConfiguration &config, const bool &isVerbose) {
+    auto DefConfig_ = DefaultConfigs_->GetTypeConfig(config.GetType());
+    string subtypeKey = config.GetSubtype() + ":" + config.GetGroup();
     config.SetTriggerFilterParameters(TrapFilterParameters(
-            node.child("Trigger").attribute("l").as_double(DefaultConfig::filterL),
-            node.child("Trigger").attribute("g").as_double(DefaultConfig::filterG),
-            node.child("Trigger").attribute("t").as_double(DefaultConfig::filterT)));
+        node.child("Trigger").attribute("l").as_double(DefConfig_->GetDefaultFilterL(subtypeKey)),
+        node.child("Trigger").attribute("g").as_double(DefConfig_->GetDefaultFilterG(subtypeKey)),
+        node.child("Trigger").attribute("t").as_double(DefConfig_->GetDefaultFilterT(subtypeKey))));
     config.SetEnergyFilterParameters(TrapFilterParameters(
-            node.child("Energy").attribute("l").as_double(DefaultConfig::filterL),
-            node.child("Energy").attribute("g").as_double(DefaultConfig::filterG),
-            node.child("Energy").attribute("t").as_double(DefaultConfig::filterT)));
+            node.child("Energy").attribute("l").as_double(DefConfig_->GetDefaultFilterL(subtypeKey)),
+            node.child("Energy").attribute("g").as_double(DefConfig_->GetDefaultFilterG(subtypeKey)),
+            node.child("Energy").attribute("t").as_double(DefConfig_->GetDefaultFilterT(subtypeKey))));
 }

@@ -12,7 +12,7 @@ endif (PAASS_USE_GSL)
 
 if (PAASS_USE_ROOT)
     list(APPEND ResourceSources CrystalBallFunction.cpp CsiFunction.cpp EmCalTimingFunction.cpp
-            SiPmtFastTimingFunction.cpp RootFitter.cpp VandleTimingFunction.cpp)
+            SiPmtFastTimingFunction.cpp RootFitter.cpp VandleTimingFunction.cpp NewDefaultConfigurationValues.cpp)
 endif (PAASS_USE_ROOT)
 
 #Add the sources to the library
