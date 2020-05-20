@@ -6,6 +6,7 @@
 #ifndef PIXIESUITE_TIMINGDRIVER_HPP
 #define PIXIESUITE_TIMINGDRIVER_HPP
 
+#include <map>
 #include <utility>
 #include <vector>
 
@@ -35,26 +36,28 @@ public:
     /// maximum for CFD based calculations should be the extrapolated maximum.
     ///@param[in] a : The baseline information in a pair<baseline, stddev>
     ///@return The phase calculated by the algorithm.
-    virtual double CalculatePhase(const std::vector<unsigned int> &data, const std::pair<double, double> &pars,
-                                  const std::pair<unsigned int, double> &max,
-                                  const std::pair<double, double> baseline) {
+    virtual double CalculatePhase(const std::vector<unsigned int> &data, const std::pair<double, double> &pars, const std::pair<unsigned int, double> &max, const std::pair<double, double> baseline) {
         return 0.0;
     }
 
     ///@Brief Overload of the Calculate phase method to allow for data
     /// vectors of type double. We do this since we cannot template a virtual
-    /// method.
-    virtual double CalculatePhase(const std::vector<double> &data, const std::pair<double, double> &pars,
-                                  const std::pair<unsigned int, double> &max,
-                                  const std::pair<double, double> baseline) {
+    /// method. This is overload used by primarily by the Fitting analyzer.
+    virtual double CalculatePhase(const std::vector<double> &data, const std::pair<double, double> &pars, const std::pair<unsigned int, double> &max, const std::pair<double, double> baseline) {
         return 0.0;
     }
     
-    ///@Brief Overload of the Calculate phase method to allow for tuple based pars, and taking the real trace
-    //This particular overload is for the newish PixieCfd method, which should work like the PolyCfd but without the dependancy on the Trace max.
+    ///@Brief Overload of the Calculate phase method to allow for map based pars, and taking the baseline subtracted trace
+    //This particular overload is for the Cfd methods which can need several parameters depending on the method
     /// We do this since we cannot template a virtual method.
-    virtual double CalculatePhase(const std::vector<double> &data, const std::tuple<double, double, double> &pars,
-                                  const std::pair<unsigned int, unsigned int> &range, const std::pair<double, double> baseline) {
+    virtual double CalculatePhase(const std::vector<double> &data, const std::map<std::string,double> &pars, const std::pair<unsigned int, unsigned int> &range, const std::pair<double, double> baseline) {
+        return 0.0;
+    }
+
+     ///@Brief Overload of the Calculate phase method to allow for map based pars, and taking the baseline subtracted trace
+    //This particular overload is for the Cfd methods which can need several parameters depending on the method. This takes a double as the second of the range parameter (for extrapolated maxes)
+    /// We do this since we cannot template a virtual method.
+    virtual double CalculatePhase(const std::vector<double> &data, const std::map<std::string,double> &pars, const std::pair<unsigned int, double> &range, const std::pair<double, double> baseline) {
         return 0.0;
     }
 

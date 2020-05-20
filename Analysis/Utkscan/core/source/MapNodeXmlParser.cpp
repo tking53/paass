@@ -214,10 +214,14 @@ void MapNodeXmlParser::ParseCalibrations(const pugi::xml_node &node, const Chann
 /// timing codes. The only currently recognized node here is the Parameters node. If the Cfd node exists then the
 /// Parameter node must also exist.
 void MapNodeXmlParser::ParseCfdNode(const pugi::xml_node &node, ChannelConfiguration &config, const bool &isVerbose) {
-        config.SetCfdParameters(make_tuple(
-                node.attribute("f").as_double(DefaultConfig::cfdF),
-                node.attribute("d").as_double(DefaultConfig::cfdD),
-                node.attribute("l").as_double(DefaultConfig::cfdL)));
+    auto DefConfig_ = DefaultConfigs_->GetTypeConfig(config.GetType());
+    string subtypeKey = config.GetSubtype() + ":" + config.GetGroup();
+    map<string, double> cfdPars_ ;
+    cfdPars_.emplace("cfdF", node.attribute("f").as_double(DefConfig_->GetDefaultCfdF(subtypeKey)));
+    cfdPars_.emplace("cfdD", node.attribute("d").as_double(DefConfig_->GetDefaultCfdD(subtypeKey)));
+    cfdPars_.emplace("cfdL", node.attribute("l").as_double(DefConfig_->GetDefaultCfdL(subtypeKey)));
+    cfdPars_.emplace("cfdT", node.attribute("t").as_double(DefConfig_->GetDefaultCfdT(subtypeKey)));
+    config.SetCfdParameters(cfdPars_);
 }
 
 ///This method parses the fitting node. There are only two free parameters at the moment. The main part of this node

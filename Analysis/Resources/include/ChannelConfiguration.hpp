@@ -39,7 +39,7 @@ public:
     double GetBaselineThreshold() const { return baselineThreshold_; }
 
     ///@return the tuple containing the CFD Parameters.
-    std::tuple<double, double, double> GetCfdParameters() const { return cfdParameters_; }
+    std::map<std::string, double> GetCfdParameters() const { return cfdParameters_; }
 
     ///@return The value of the starting position for particle discrimination in trace samples
     unsigned int GetDiscriminationStartInSamples() const { return discriminationStartInSamples_; }
@@ -100,10 +100,10 @@ public:
     /// of the baseline.
     void SetBaselineThreshold(const double &a) { baselineThreshold_ = a; }
 
-    ///Sets the tuple containing the CFD parameters. Parameters are held in order of <F, D, L>. L is an optional
-    /// parameter for most of the algorithms.
+    ///Sets the map containing the CFD parameters. Parameters are held in order of <F, D, L, T>. L is an optional
+    /// parameter for most of the algorithms. F is the threshold fraction for the polyCFD, and T is the threshold for the PixieCfd.
     ///@param[in] a : the parameters that we want to set.
-    void SetCfdParameters(const std::tuple<double, double, double> &a) { cfdParameters_ = a; }
+    void SetCfdParameters(const std::map<std::string,double> &a) { cfdParameters_ = a; }
 
     ///Sets the start position for the tail sums for doing particle discrimination
     void SetDiscriminationStartInSamples(const unsigned int &a) { discriminationStartInSamples_ = a; }
@@ -195,7 +195,7 @@ public:
 
 private:
     double baselineThreshold_; ///< The threshold for the baseline to handle noisy traces.
-    std::tuple<double, double, double> cfdParameters_; ///< The parameters to be used with the CFD routines
+    std::map<std::string, double> cfdParameters_; ///< The parameters to be used with the CFD routines
     unsigned int discriminationStartInSamples_; ///< The position from the max that we'll do particle discrimination
     TrapFilterParameters energyFilterParameters_; ///< Parameters to use for energy filter calculations
     std::pair<double, double> fittingParameters_; ///< The parameters to use for the fitting routines

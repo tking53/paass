@@ -57,10 +57,8 @@ void CfdAnalyzer::Analyze(Trace &trace, const ChannelConfiguration &cfg) {
     }
 
 
-    const tuple<double, double, double> pars = cfg.GetCfdParameters();
+    const map<string,double> pars = cfg.GetCfdParameters();
 
-    ///@TODO We do not currently have any CFDs that require L, so we are not going to pass that variable. In
-    /// addition, we do not have an overloaded version of CalculatePhase that takes a tuple<double, double, double>
     double phase = -9999;
     if (tuplePars_){
         phase = driver_->CalculatePhase(trace.GetTraceSansBaseline(), pars, make_pair(cfg.GetTraceDelayInSamples(), cfg.GetWaveformBoundsInSamples().second), trace.GetBaselineInfo());
@@ -72,9 +70,9 @@ void CfdAnalyzer::Analyze(Trace &trace, const ChannelConfiguration &cfg) {
             trace.SetHasValidTimingAnalysis(true);
         }
     } else { 
-        phase = driver_->CalculatePhase(trace.GetTraceSansBaseline(), make_pair(get<0>(pars), get<1>(pars)), trace.GetExtrapolatedMaxInfo(), trace.GetBaselineInfo());
-         trace.SetPhase(phase);
-    trace.SetHasValidTimingAnalysis(true);
+        phase = driver_->CalculatePhase(trace.GetTraceSansBaseline(), pars, trace.GetExtrapolatedMaxInfo(), trace.GetBaselineInfo());
+        trace.SetPhase(phase);
+        trace.SetHasValidTimingAnalysis(true);
     }
 
    
