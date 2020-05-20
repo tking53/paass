@@ -6,10 +6,13 @@
 #include "HelperFunctions.hpp" 
 #include "PixieCfd.hpp"
 
-using namespace std;
+using std::map;
+using std::vector;
+using std::pair;
+
 /// Perform CFD analysis on the waveform
 double PixieCfd::CalculatePhase(const std::vector<double> &data,
-                          const std::tuple<double, double, double> &pars,
+                          const std::map<string, double> &pars,
                           const std::pair<unsigned int, unsigned int> &range,
                           const std::pair<double, double> baseline) {
 
@@ -19,9 +22,10 @@ double PixieCfd::CalculatePhase(const std::vector<double> &data,
         return -9999;
     }
 
-    double thresh = get<0>(pars);
-    double delay = get<1>(pars);
-    double scale = get<2>(pars);
+    double thresh = pars.find("cfdT")->second;
+    double delay = pars.find("cfdD")->second;
+    double scale = pars.find("cfdL")->second;
+
     unsigned int TraceDelay = range.first;
     unsigned int WaveformRangeHigh = range.second;
     vector<double> cfdTrace (data.size(),0.0);
@@ -58,43 +62,3 @@ double PixieCfd::CalculatePhase(const std::vector<double> &data,
         return -1;
     }
 } //end CalculatePhase()
-/* OLD Copy over from XiaCfd.cpp
-    if (size == 0 || baseline < 0) { return -9999; }
-    if (!cfdvals)
-        cfdvals = new double[size];
-
-    double cfdMinimum = 9999;
-    size_t cfdMinIndex = 0;
-
-    phase = -9999;
-
-    // Compute the cfd waveform.
-    for (size_t cfdIndex = 0; cfdIndex < size; ++cfdIndex) {
-        cfdvals[cfdIndex] = 0.0;
-        if (cfdIndex >= L_ + D_ - 1) {
-            for (size_t i = 0; i < L_; i++)
-                cfdvals[cfdIndex] +=
-                        F_ * (event->adcTrace[cfdIndex - i] - baseline) -
-                        (event->adcTrace[cfdIndex - i - D_] - baseline);
-        }
-        if (cfdvals[cfdIndex] < cfdMinimum) {
-            cfdMinimum = cfdvals[cfdIndex];
-            cfdMinIndex = cfdIndex;
-        }
-    }
-
-    // Find the zero-crossing.
-    if (cfdMinIndex > 0) {
-        // Find the zero-crossing.
-        for (size_t cfdIndex = cfdMinIndex - 1; cfdIndex >= 0; cfdIndex--) {
-            if (cfdvals[cfdIndex] >= 0.0 && cfdvals[cfdIndex + 1] < 0.0) {
-                phase = cfdIndex - cfdvals[cfdIndex] /
-                                   (cfdvals[cfdIndex + 1] - cfdvals[cfdIndex]);
-                break;
-            }
-        }
-    }
-
-    return phase;
-}
-*/

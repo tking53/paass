@@ -8,7 +8,9 @@
 #include "HelperFunctions.hpp"
 #include "PolynomialCfd.hpp"
 
-using namespace std;
+using std::map;
+using std::vector;
+using std::pair;
 
 PolynomialCfd::PolynomialCfd(){
     polyMethod_ = 1;
@@ -29,13 +31,13 @@ PolynomialCfd::PolynomialCfd(const int &method){
 
 
 /// Perform CFD analysis on the waveform.
-double PolynomialCfd::CalculatePhase(const std::vector<double> &data, const std::pair<double, double> &pars,const std::pair<unsigned int, double> &max, const std::pair<double, double> baseline) {
+double PolynomialCfd::CalculatePhase(const std::vector<double> &data, const std::map<string, double> &pars,const std::pair<unsigned int, double> &max, const std::pair<double, double> baseline) {
     if (data.size() == 0)
         throw range_error("PolynomialCfd::CalculatePhase - The data vector was empty!");
     if (data.size() < max.first)
         throw range_error("PolynomialCfd::CalculatePhase - The maximum position is larger than the size of the data vector.");
 
-    double threshold = pars.first * max.second;
+    double threshold = pars.find("cfdF")->second * max.second;
     double phase = -9999;
   
     if (polyMethod_ == 1) {
