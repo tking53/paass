@@ -12,8 +12,10 @@
 
 #include "Calibrator.hpp"
 #include "ChannelConfiguration.hpp"
+#include "DefaultConfigurationValues.hpp"
 #include "DetectorLibrary.hpp"
 #include "Messenger.hpp"
+#include "NewDefaultConfigurationValues.hpp"
 #include "WalkCorrector.hpp"
 #include "XmlParser.hpp"
 
@@ -25,7 +27,9 @@ public:
     MapNodeXmlParser() {}
 
     ///Default Destructor
-    ~MapNodeXmlParser() {}
+    ~MapNodeXmlParser() {
+        delete DefaultConfigs_;
+    }
 
     ///Parses the provided node from an opened xml file.
     ///@param[in] node : The node that we are going to parse
@@ -33,6 +37,9 @@ public:
     void ParseNode(DetectorLibrary *lib);
 
 private:
+    /// A pointer to the default configuration "reference table"
+    DefaultDetectorConfig* DefaultConfigs_;
+
     ///An instance of the messenger class so that we can output pretty info
     Messenger messenger_;
 
