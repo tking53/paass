@@ -131,6 +131,63 @@ struct VANDLES {
     int vMulti = 0;
     double sTime = -999;
     double sQdc = -999;
+    double sTdiff = -999;
+
+    double sLTmaxVal = -999;
+    double sRTmaxVal = -999;
+    double sLTmaxPos = -999;
+    double sRTmaxPos = -999;
+
+    double vLTmaxVal = -999;
+    double vRTmaxVal = -999;
+    double vLTmaxPos = -999;
+    double vRTmaxPos = -999;
+
+    std::vector<unsigned int> sLTrace = {};
+    std::vector<unsigned int> sRTrace = {};
+    std::vector<unsigned int> vLTrace = {};
+    std::vector<unsigned int> vRTrace = {};
+
+    double sLTqdc = -999;
+    double sRTqdc = -999;
+    double vLTqdc = -999;
+    double vRTqdc = -999;
+    
+    double sLTbase = -999;
+    double sRTbase = -999;
+    double vLTbase = -999;
+    double vRTbase = -999;
+
+    double sLTstdBase = -999;
+    double sRTstdBase = -999;
+    double vLTstdBase = -999;
+    double vRTstdBase = -999;
+
+    double sLTphaseNS = -999;
+    double sRTphaseNS = -999;
+    double vLTphaseNS = -999;
+    double vRTphaseNS = -999;
+
+    double sLTphase = -999;
+    double sRTphase = -999;
+    double vLTphase = -999;
+    double vRTphase = -999;
+
+    bool sLTisValidTiming = false;   
+    bool sRTisValidTiming = false;
+    bool vLTisValidTiming = false;
+    bool vRTisValidTiming = false;
+
+    bool sLTisValidWave = false;   
+    bool sRTisValidWave = false;
+    bool vLTisValidWave = false;
+    bool vRTisValidWave = false;
+
+    double corTof_var = -999;
+
+    double z0= -999;
+    double xoff= -999;
+
 };
 static const VANDLES VANDLES_DEFAULT_STRUCT;
 }  // namespace processor_struct

@@ -196,6 +196,14 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
             double corTof = CorrectTOF(tof, bar.GetFlightPath(), idealFP_);
             double NCtof = bar.GetCorTimeAve() - start.GetCorTimeAve() ;
 
+
+            double Z0 = bar.GetCalibration().GetZ0();
+            double xoffset = bar.GetCalibration().GetXOffset();
+            double speedOfLightInBar = (-5.94268 * pow(10,6)) * pow( bar.GetQdc() + 454.261, -2.27498 ) + 13.4352;
+            double flightPath = sqrt(Z0 * Z0 + pow( speedOfLightInBar * 0.5 * bar.GetTimeDifference() + xoffset, 2));
+            double corTof_Xu = CorrectTOF(tof,flightPath, idealFP_);
+
+
             PlotTofHistograms(tof, corTof,NCtof, bar.GetQdc(), barLoc * numStarts_ + startLoc,
                               ReturnOffset(bar.GetType()),caled);
 
@@ -209,6 +217,7 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
                 vandles.barNum = barLoc;
                 vandles.tof = tof;
                 vandles.corTof = corTof;
+                vandles.corTof_var = corTof_Xu;
 
                 vandles.barType = bar.GetType();
                 vandles.tDiff = bar.GetTimeDifference();
@@ -216,6 +225,60 @@ void VandleProcessor::AnalyzeBarStarts(const BarDetector &bar, unsigned int &bar
                 vandles.tAvg = bar.GetTimeAverage();
                 vandles.wcTavg = bar.GetCorTimeAve();
                 vandles.wcTdiff = bar.GetCorTimeDiff();
+
+                vandles.sLTmaxVal = start.GetLeftSide().GetTrace().GetMaxInfo().second;
+                vandles.sRTmaxVal = start.GetRightSide().GetTrace().GetMaxInfo().second;
+
+                vandles.sLTmaxPos = start.GetLeftSide().GetTrace().GetMaxInfo().first;
+                vandles.sRTmaxPos = start.GetRightSide().GetTrace().GetMaxInfo().first;
+
+                vandles.vLTmaxVal = bar.GetLeftSide().GetTrace().GetMaxInfo().second;
+                vandles.vRTmaxVal = bar.GetRightSide().GetTrace().GetMaxInfo().second;
+                vandles.vLTmaxPos = bar.GetLeftSide().GetTrace().GetMaxInfo().first;
+                vandles.vRTmaxPos = bar.GetRightSide().GetTrace().GetMaxInfo().first;
+
+                vandles.sLTrace = start.GetLeftSide().GetTrace();
+                vandles.sRTrace = start.GetRightSide().GetTrace();
+                vandles.vLTrace = bar.GetLeftSide().GetTrace();
+                vandles.vRTrace = bar.GetRightSide().GetTrace();
+
+                vandles.sLTqdc = start.GetLeftSide().GetTraceQdc();
+                vandles.sRTqdc = start.GetRightSide().GetTraceQdc();
+                vandles.vLTqdc = bar.GetLeftSide().GetTraceQdc();
+                vandles.vRTqdc = bar.GetRightSide().GetTraceQdc();
+
+                vandles.sRTbase = start.GetRightSide().GetTrace().GetBaselineInfo().first;
+                vandles.sLTbase = start.GetLeftSide().GetTrace().GetBaselineInfo().first;
+                vandles.vLTbase = bar.GetLeftSide().GetTrace().GetBaselineInfo().first;
+                vandles.vRTbase = bar.GetRightSide().GetTrace().GetBaselineInfo().first;
+
+                vandles.sRTstdBase = start.GetRightSide().GetTrace().GetBaselineInfo().second;
+                vandles.sLTstdBase = start.GetLeftSide().GetTrace().GetBaselineInfo().second;
+                vandles.vLTstdBase = bar.GetLeftSide().GetTrace().GetBaselineInfo().second;
+                vandles.vRTstdBase = bar.GetRightSide().GetTrace().GetBaselineInfo().second;
+
+                vandles.sRTphase = start.GetRightSide().GetTrace().GetPhase();
+                vandles.sLTphase = start.GetLeftSide().GetTrace().GetPhase();
+                vandles.vLTphase = bar.GetLeftSide().GetTrace().GetPhase();
+                vandles.vRTphase = bar.GetRightSide().GetTrace().GetPhase();
+               
+                vandles.sRTphaseNS = start.GetRightSide().GetPhaseInNs();
+                vandles.sLTphaseNS = start.GetLeftSide().GetPhaseInNs();
+                vandles.vLTphaseNS = bar.GetLeftSide().GetPhaseInNs();
+                vandles.vRTphaseNS = bar.GetRightSide().GetPhaseInNs();
+
+                vandles.sRTisValidTiming = start.GetRightSide().GetTrace().HasValidTimingAnalysis();
+                vandles.sLTisValidTiming = start.GetLeftSide().GetTrace().HasValidTimingAnalysis();
+                vandles.vLTisValidTiming = bar.GetLeftSide().GetTrace().HasValidTimingAnalysis();
+                vandles.vRTisValidTiming = bar.GetRightSide().GetTrace().HasValidTimingAnalysis();
+
+                vandles.sRTisValidWave = start.GetRightSide().GetTrace().HasValidWaveformAnalysis();
+                vandles.sLTisValidWave = start.GetLeftSide().GetTrace().HasValidWaveformAnalysis();
+                vandles.vLTisValidWave = bar.GetLeftSide().GetTrace().HasValidWaveformAnalysis();
+                vandles.vRTisValidWave = bar.GetRightSide().GetTrace().HasValidWaveformAnalysis();
+                
+                vandles.z0 = bar.GetCalibration().GetZ0();                
+                vandles.xoff = bar.GetCalibration().GetXOffset();
 
                 pixie_tree_event_->vandle_vec_.emplace_back(vandles);
                 vandles = processor_struct::VANDLES_DEFAULT_STRUCT;
@@ -244,6 +307,13 @@ void VandleProcessor::AnalyzeStarts(const BarDetector &bar, unsigned int &barLoc
             double corTof = CorrectTOF(tof, bar.GetFlightPath(), idealFP_);
             double NCtof =bar.GetCorTimeAve() - startTime ;
 
+            double Z0 = bar.GetCalibration().GetZ0();
+            double xoffset = bar.GetCalibration().GetXOffset();
+            double speedOfLightInBar = (-5.94268 * pow(10,6)) * pow( bar.GetQdc() + 454.261, -2.27498 ) + 13.4352;
+            double flightPath = sqrt(Z0 * Z0 + pow( speedOfLightInBar * 0.5 * bar.GetTimeDifference() + xoffset, 2));
+            double corTof_Xu = CorrectTOF(tof,flightPath, idealFP_);
+           
+            
             PlotTofHistograms(tof, corTof, NCtof,bar.GetQdc(), barLoc * numStarts_ + startLoc,
                               ReturnOffset(bar.GetType()),caled);
             if (DetectorDriver::get()->GetSysRootOutput()){
@@ -255,18 +325,64 @@ void VandleProcessor::AnalyzeStarts(const BarDetector &bar, unsigned int &barLoc
                     if ((*itStart).second.GetTrace().HasValidWaveformAnalysis()){
                         vandles.sQdc = start.GetTraceQdc();
                     }
+
                     vandles.qdc = bar.GetQdc();
                     vandles.barNum = barLoc;
                     vandles.tof = tof;
                     vandles.corTof = corTof;
-                    
+                    vandles.corTof_var = corTof_Xu;
+
                     vandles.barType = bar.GetType();
                     vandles.tDiff = bar.GetTimeDifference();
                     vandles.qdcPos = bar.GetQdcPosition();
                     vandles.tAvg = bar.GetTimeAverage();
                     vandles.wcTavg = bar.GetCorTimeAve();
                     vandles.wcTdiff = bar.GetCorTimeDiff();
-                    
+
+                    vandles.sLTmaxVal = start.GetTrace().GetMaxInfo().second;
+
+                    vandles.sLTmaxPos = start.GetTrace().GetMaxInfo().first;
+
+                    vandles.vLTmaxVal = bar.GetLeftSide().GetTrace().GetMaxInfo().second;
+                    vandles.vRTmaxVal = bar.GetRightSide().GetTrace().GetMaxInfo().second;
+                    vandles.vLTmaxPos = bar.GetLeftSide().GetTrace().GetMaxInfo().first;
+                    vandles.vRTmaxPos = bar.GetRightSide().GetTrace().GetMaxInfo().first;
+
+                    vandles.sLTrace = start.GetTrace();
+                    vandles.vLTrace = bar.GetLeftSide().GetTrace();
+                    vandles.vRTrace = bar.GetRightSide().GetTrace();
+
+                    vandles.sLTqdc = start.GetTraceQdc();
+                    vandles.vLTqdc = bar.GetLeftSide().GetTraceQdc();
+                    vandles.vRTqdc = bar.GetRightSide().GetTraceQdc();
+
+                    vandles.sLTbase = start.GetTrace().GetBaselineInfo().first;
+                    vandles.vLTbase = bar.GetLeftSide().GetTrace().GetBaselineInfo().first;
+                    vandles.vRTbase = bar.GetRightSide().GetTrace().GetBaselineInfo().first;
+
+                    vandles.sLTstdBase = start.GetTrace().GetBaselineInfo().second;
+                    vandles.vLTstdBase = bar.GetLeftSide().GetTrace().GetBaselineInfo().second;
+                    vandles.vRTstdBase = bar.GetRightSide().GetTrace().GetBaselineInfo().second;
+
+                    vandles.sLTphase = start.GetTrace().GetPhase();
+                    vandles.vLTphase = bar.GetLeftSide().GetTrace().GetPhase();
+                    vandles.vRTphase = bar.GetRightSide().GetTrace().GetPhase();
+
+                    vandles.sLTphaseNS = start.GetPhaseInNs();
+                    vandles.vLTphaseNS = bar.GetLeftSide().GetPhaseInNs();
+                    vandles.vRTphaseNS = bar.GetRightSide().GetPhaseInNs();
+
+                    vandles.sLTisValidTiming = start.GetTrace().HasValidTimingAnalysis();
+                    vandles.vLTisValidTiming = bar.GetLeftSide().GetTrace().HasValidTimingAnalysis();
+                    vandles.vRTisValidTiming = bar.GetRightSide().GetTrace().HasValidTimingAnalysis();
+
+                    vandles.sLTisValidWave = start.GetTrace().HasValidWaveformAnalysis();
+                    vandles.vLTisValidWave = bar.GetLeftSide().GetTrace().HasValidWaveformAnalysis();
+                    vandles.vRTisValidWave = bar.GetRightSide().GetTrace().HasValidWaveformAnalysis();
+
+                    vandles.z0 = bar.GetCalibration().GetZ0();
+                    vandles.xoff = bar.GetCalibration().GetXOffset();
+
                     pixie_tree_event_->vandle_vec_.emplace_back(vandles);
                     vandles = processor_struct::VANDLES_DEFAULT_STRUCT;
                 }
