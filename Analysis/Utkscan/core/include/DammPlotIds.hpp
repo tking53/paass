@@ -199,6 +199,12 @@ namespace dammIds {
         const int RANGE = 100;//!< Range for Dssd4SheProcessor
     }
 
+    /// in MtasDssdTestProcessor.cpp
+    namespace mtasdssd {
+        const int OFFSET = 7200;//!< Offset for MtasDssdTestProcessor
+        const int RANGE = 300;//!< Range for MtasDssdTestProcessor
+    }
+
     /// Definitions for all of the traces
     namespace analyzers {
         const int traceBins = SA; //!< Number of Bins for Traces

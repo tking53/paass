@@ -53,6 +53,7 @@
 #include "E11027Processor.hpp"
 #include "TemplateExpProcessor.hpp"
 #include "VandleOrnl2012Processor.hpp"
+#include "MtasDssdTestProcessor.hpp"
 
 #ifdef useroot  //Some processors REQUIRE ROOT to function
 #include "Anl1471Processor.hpp"
@@ -209,6 +210,11 @@ vector<EventProcessor *> DetectorDriverXmlParser::ParseProcessors(const pugi::xm
                 processor.attribute("double_start").as_bool(false)));
         } else if (name == "McpProcessor") {
             vecProcess.push_back(new McpProcessor());
+        } else if (name == "MtasDssdTestProcessor") {
+            vecProcess.push_back(new MtasDssdTestProcessor(
+                processor.attribute("numDssds").as_int(1),
+                processor.attribute("res").as_double(1)
+            ));
         } else if (name == "NeutronScintProcessor") {
             vecProcess.push_back(new NeutronScintProcessor());
         } else if (name == "PositionProcessor") {

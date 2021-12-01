@@ -1,6 +1,7 @@
 #@authors S. V. Paulauskas
 set(EXPERIMENT_SOURCES
         E11027Processor.cpp
+        MtasDssdTestProcessor.cpp
         TemplateExpProcessor.cpp
         VandleOrnl2012Processor.cpp
         )
