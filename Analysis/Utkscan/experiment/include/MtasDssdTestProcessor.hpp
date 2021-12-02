@@ -58,9 +58,9 @@ class MtasDssdTestProcessor : public EventProcessor {
 
    struct maxEventStruct{
        maxEventStruct(){
-        maxFront  = NULL;
-        maxBackLG = NULL;
-        maxBackHG = NULL;    
+        maxFront  = nullptr;
+        maxBackLG = nullptr;
+        maxBackHG = nullptr;    
        }
 
        maxEventStruct(ChanEvent* maxF, ChanEvent* maxBLG, ChanEvent* maxBHG) {

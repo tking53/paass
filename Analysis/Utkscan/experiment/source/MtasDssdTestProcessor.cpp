@@ -23,7 +23,8 @@ namespace dammIds {
         const int DD_F_Strip_Vs_StripEnergy = 0;
         const int DD_B_HG_Strip_Vs_StripEnergy = 1;
         const int DD_B_LG_Strip_Vs_StripEnergy = 2;
-        const int DD_FBImage = 3;
+        const int DD_FBHG_Image = 3;
+        const int DD_FBLG_Image = 4;
     }
 }
 using namespace std;
@@ -51,14 +52,18 @@ void MtasDssdTestProcessor::DeclarePlots(void) {
         int dssd_offset = ReturnPlottingOffsets(curDSSD);
 
         // Uncalibrated Energy Based Histograms
-        DeclareHistogram2D(DD_F_Strip_Vs_StripEnergy + dssd_offset + Uncalibrated_Offset , fBins, energyBins,(DSSDprefix + " Front strip vs Raw Energy/10").c_str());
-        DeclareHistogram2D(DD_B_HG_Strip_Vs_StripEnergy + dssd_offset + Uncalibrated_Offset , bBins, energyBins,(DSSDprefix + " Back HG strip vs Raw Energy/10").c_str());
-        DeclareHistogram2D(DD_B_LG_Strip_Vs_StripEnergy + dssd_offset + Uncalibrated_Offset , bBins, energyBins,(DSSDprefix + " Back LG strip vs Raw Energy/10").c_str());
+        DeclareHistogram2D(DD_F_Strip_Vs_StripEnergy + dssd_offset + Uncalibrated_Offset, fBins, energyBins, (DSSDprefix + " Front strip vs Raw Energy/10").c_str());
+        DeclareHistogram2D(DD_B_HG_Strip_Vs_StripEnergy + dssd_offset + Uncalibrated_Offset, bBins, energyBins, (DSSDprefix + " Back HG strip vs Raw Energy/10").c_str());
+        DeclareHistogram2D(DD_B_LG_Strip_Vs_StripEnergy + dssd_offset + Uncalibrated_Offset, bBins, energyBins, (DSSDprefix + " Back LG strip vs Raw Energy/10").c_str());
 
         // Calibrated Energy Based Histrogramss
         DeclareHistogram2D(DD_F_Strip_Vs_StripEnergy + dssd_offset, fBins, energyBins, (DSSDprefix + " Front strip vs Cal Energy/10").c_str());
         DeclareHistogram2D(DD_B_HG_Strip_Vs_StripEnergy + dssd_offset, bBins, energyBins, (DSSDprefix + " Back HG strip vs Cal Energy/10").c_str());
         DeclareHistogram2D(DD_B_LG_Strip_Vs_StripEnergy + dssd_offset, bBins, energyBins, (DSSDprefix + " Back LG strip vs Cal Energy/10").c_str());
+
+        // Image Histograms
+        DeclareHistogram2D( DD_FBHG_Image + dssd_offset, energyBins, energyBins, (DSSDprefix + " Front/Back HG image ").c_str());
+        DeclareHistogram2D( DD_FBLG_Image + dssd_offset, energyBins, energyBins, (DSSDprefix + " Front/Back LG image ").c_str());
     }
 }
 
@@ -95,29 +100,35 @@ bool MtasDssdTestProcessor::PreProcess(RawEvent &event) {
             isDSSD_2_ = true;
         }
         DSSD_VectorIndex_ = DSSDNumber_-1;
-      
+
         if ((*it)->GetChanID().HasTag("front")) {
             isFront_ = true;
             multiContainer_.at(DSSD_VectorIndex_).numberOfFires_f_++;
-            // if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront->GetEnergy()) {
-            //     vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront = (*it);
-            // }
+            if (! (vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront)) {
+                vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront = (*it);
+            } else if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront->GetEnergy()) {
+                vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront = (*it);
+            }
         } else if ((*it)->GetChanID().HasTag("back") && (*it)->GetChanID().HasTag("lowGain")) {
             isBack_ = true;
             isLowGain_ = true;
             multiContainer_.at(DSSD_VectorIndex_).numberOfFires_blg_++;
-            // if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG->GetEnergy()) {
-            //     vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG = (*it);
-            // }
+            if (! vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG) {
+                vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG = (*it);
+            } else if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG->GetEnergy()) {
+                vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG = (*it);
+            }
         } else if ((*it)->GetChanID().HasTag("back") && (*it)->GetChanID().HasTag("highGain")) {
             isBack_ = true;
             isHighGain_ = true;
             multiContainer_.at(DSSD_VectorIndex_).numberOfFires_bhg_++;
-            // if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG->GetEnergy()) {
-            //     vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG = (*it);
-            // }
+            if (! vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG) {
+                vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG = (*it);
+            } else if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG->GetEnergy()) {
+                vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG = (*it);
+            }
         }
-   
+
         int DSSD_Plotting_Offset_ = ReturnPlottingOffsets(DSSDNumber_); //! note the lack of -1 here. We want the DSSD plots to start at 10, so the totals plots can sit in 0-9
 
         double calStripEnergy_ = (*it)->GetCalibratedEnergy();
@@ -136,18 +147,22 @@ bool MtasDssdTestProcessor::PreProcess(RawEvent &event) {
         }
     }
 
-    for (int i = 0; i < multiContainer_.size(); ++i) {
+    for (unsigned i = 0; i < multiContainer_.size(); ++i) {
         plot(DD_Multiplicties, i, multiContainer_.at(i).numberOfFires_f_);
         plot(DD_Multiplicties, i, multiContainer_.at(i).numberOfFires_bhg_);
         plot(DD_Multiplicties, i, multiContainer_.at(i).numberOfFires_blg_);
     }
 
-    // for (auto i = vectorOfMaxEvents_.begin(); i != vectorOfMaxEvents_.end(); ++i){
-        
-    //     if( (*i))
+    for (auto it = vectorOfMaxEvents_.begin(); it != vectorOfMaxEvents_.end(); ++it){
+        int DSSD_Plotting_Offset_ = ReturnPlottingOffsets(it-vectorOfMaxEvents_.begin()); //! Taking short cut here because this vector should ALWAYS be  reasonably short (<10), since we destory and recreate each PreProcess call. We should change it to a secondary counter if this vector is modified to last over several events or if for whatever reason we start having 10+ DSSDs (Please no)
+        if ((*it).maxFront && (*it).maxBackHG) {
+            plot(DD_FBHG_Image + DSSD_Plotting_Offset_ ,(*it).maxFront->GetCalibratedEnergy(),(*it).maxBackHG->GetCalibratedEnergy());
+        }
+        if ((*it).maxFront && (*it).maxBackLG) {
+            plot(DD_FBLG_Image + DSSD_Plotting_Offset_ ,(*it).maxFront->GetCalibratedEnergy(),(*it).maxBackLG->GetCalibratedEnergy());
+        }
 
-
-    // }
+    }
 
     return true;
 }
