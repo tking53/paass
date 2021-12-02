@@ -45,13 +45,35 @@ class MtasDssdTestProcessor : public EventProcessor {
    int numberOfDssds;
    int plotRes;
 
-   typedef struct  {
-       int numberOfFires_f_ = 0;
-       int numberOfFires_bhg_ = 0;
-       int numberOfFires_blg_ = 0;
-   } multipliciesStruc;
+   struct multipliciesStruc {
+       multipliciesStruc() {
+           numberOfFires_f_ = 0;
+           numberOfFires_bhg_ = 0;
+           numberOfFires_blg_ = 0;
+       }
+       int numberOfFires_f_;
+       int numberOfFires_bhg_;
+       int numberOfFires_blg_;
+   };
 
-   static multipliciesStruc multipliciesStrucDefault;
+   struct maxEventStruct{
+       maxEventStruct(){
+        maxFront  = NULL;
+        maxBackLG = NULL;
+        maxBackHG = NULL;    
+       }
+
+       maxEventStruct(ChanEvent* maxF, ChanEvent* maxBLG, ChanEvent* maxBHG) {
+           maxFront =  maxF;
+           maxBackLG = maxBLG;
+           maxBackHG = maxBHG;
+       }
+
+       ChanEvent* maxFront  ;
+       ChanEvent* maxBackLG ;
+       ChanEvent* maxBackHG ;
+   } ;
+
 };
 
 #endif  //PAASS_MtasDssdTestProcessor_H

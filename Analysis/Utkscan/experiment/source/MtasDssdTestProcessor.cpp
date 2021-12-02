@@ -13,8 +13,6 @@
 #include "DammPlotIds.hpp"
 #include "MtasDssdTestProcessor.hpp"
 
-
-
 namespace dammIds {
     namespace mtasdssd {
         const int DD_Multiplicties = 0; 
@@ -32,18 +30,12 @@ using namespace std;
 using namespace dammIds::mtasdssd;
     
 
-MtasDssdTestProcessor::MtasDssdTestProcessor(const int &numDSSDs, const double &res) : EventProcessor() {
+MtasDssdTestProcessor::MtasDssdTestProcessor(const int &numDSSDs, const double &res) :  EventProcessor(OFFSET,RANGE,"MtasDssdTestProcessor") {
     associatedTypes.insert("mtasdssd");
     numberOfDssds = numDSSDs;
     plotRes = res;
 }
 
-bool MtasDssdTestProcessor::PreProcess(RawEvent &event) {
-    if (!EventProcessor::PreProcess(event)){
-        return false;
-    }
-    return true;
-}
 void MtasDssdTestProcessor::DeclarePlots(void) {
 
     const int energyBins = SE;
@@ -70,22 +62,21 @@ void MtasDssdTestProcessor::DeclarePlots(void) {
     }
 }
 
-bool MtasDssdTestProcessor::Process(RawEvent &event) {
-    if (!EventProcessor::Process(event)){
+bool MtasDssdTestProcessor::PreProcess(RawEvent &event) {
+    if (!EventProcessor::PreProcess(event)) {
         return false;
     }
-
     static const auto &Events = event.GetSummary("mtasdssd", true)->GetList();
-    vector<multipliciesStruc> multiContainer_(numberOfDssds,multipliciesStrucDefault);
-    
+    vector<multipliciesStruc> multiContainer_(numberOfDssds, multipliciesStruc());
+
+    vector<maxEventStruct> vectorOfMaxEvents_(numberOfDssds,maxEventStruct());
 
     for (auto it = Events.begin(); it != Events.end(); ++it) {
+        string DSSDNumberString_(1, (*it)->GetChanID().GetSubtype().back());
 
-        string DSSDNumberString_(1,(*it)->GetChanID().GetSubtype().back());
-
-        //! Check that we set the subtype right (as "dssd1"/"dssd2"). The last char of the subtype is understood to be the dssd number 
-        if (!(DSSDNumberString_.find_first_not_of( "0123456789" ) == std::string::npos)){
-            cout<<"ERROR  MtasDssdTestProcessor::Process Last Char of subtype != a number for Mod:Channel "<< (*it)->GetModuleNumber() << ":" << (*it)->GetChannelNumber() <<". Please fix XML" <<endl;
+        //! Check that we set the subtype right (as "dssd1"/"dssd2"). The last char of the subtype is understood to be the dssd number
+        if (!(DSSDNumberString_.find_first_not_of("0123456789") == std::string::npos)) {
+            cout << "ERROR  MtasDssdTestProcessor::Process Last Char of subtype != a number for Mod:Channel " << (*it)->GetModuleNumber() << ":" << (*it)->GetChannelNumber() << ". Please fix XML" << endl;
             return false;
         }
 
@@ -94,6 +85,7 @@ bool MtasDssdTestProcessor::Process(RawEvent &event) {
         bool isLowGain_ = false, isHighGain_ = false;
 
         int DSSDNumber_ = stoi(DSSDNumberString_);
+        int DSSD_VectorIndex_;
 
         int stripNumber_ = (*it)->GetChanID().GetLocation();  //! NOTE::: This is dependent on the type:subtype  parsing order from the XML. Which is useful for testing, but we need a better way here. Maybe move is dssd1 or dssd2 up to subtype, and front, back as tags then we can use group for strip number? but we also need to split HG vs LG for the back which also should go in tags
 
@@ -102,22 +94,31 @@ bool MtasDssdTestProcessor::Process(RawEvent &event) {
         } else if (DSSDNumber_ == 2){
             isDSSD_2_ = true;
         }
-
-
-        if ((*it)->GetChanID().HasTag("front")){
+        DSSD_VectorIndex_ = DSSDNumber_-1;
+      
+        if ((*it)->GetChanID().HasTag("front")) {
             isFront_ = true;
-            multiContainer_.at(DSSDNumber_).numberOfFires_f_++;
-        } else if ((*it)->GetChanID().HasTag("back") && (*it)->GetChanID().HasTag("lowGain")){
-            isBack_= true;
+            multiContainer_.at(DSSD_VectorIndex_).numberOfFires_f_++;
+            // if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront->GetEnergy()) {
+            //     vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxFront = (*it);
+            // }
+        } else if ((*it)->GetChanID().HasTag("back") && (*it)->GetChanID().HasTag("lowGain")) {
+            isBack_ = true;
             isLowGain_ = true;
-            multiContainer_.at(DSSDNumber_).numberOfFires_blg_++;
-        }else if ((*it)->GetChanID().HasTag("back") && (*it)->GetChanID().HasTag("highGain")){
-            isBack_= true;
+            multiContainer_.at(DSSD_VectorIndex_).numberOfFires_blg_++;
+            // if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG->GetEnergy()) {
+            //     vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackLG = (*it);
+            // }
+        } else if ((*it)->GetChanID().HasTag("back") && (*it)->GetChanID().HasTag("highGain")) {
+            isBack_ = true;
             isHighGain_ = true;
-            multiContainer_.at(DSSDNumber_).numberOfFires_bhg_++;
+            multiContainer_.at(DSSD_VectorIndex_).numberOfFires_bhg_++;
+            // if ((*it)->GetEnergy() > vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG->GetEnergy()) {
+            //     vectorOfMaxEvents_.at(DSSD_VectorIndex_).maxBackHG = (*it);
+            // }
         }
-
-        int DSSD_Plotting_Offset_ = ReturnPlottingOffsets(DSSDNumber_);
+   
+        int DSSD_Plotting_Offset_ = ReturnPlottingOffsets(DSSDNumber_); //! note the lack of -1 here. We want the DSSD plots to start at 10, so the totals plots can sit in 0-9
 
         double calStripEnergy_ = (*it)->GetCalibratedEnergy();
         double rawStripEnergy_ = (*it)->GetEnergy();
@@ -134,7 +135,30 @@ bool MtasDssdTestProcessor::Process(RawEvent &event) {
             plot(DD_B_HG_Strip_Vs_StripEnergy + DSSD_Plotting_Offset_, stripNumber_, calStripEnergy_ / 10.0);
         }
     }
-    
+
+    for (int i = 0; i < multiContainer_.size(); ++i) {
+        plot(DD_Multiplicties, i, multiContainer_.at(i).numberOfFires_f_);
+        plot(DD_Multiplicties, i, multiContainer_.at(i).numberOfFires_bhg_);
+        plot(DD_Multiplicties, i, multiContainer_.at(i).numberOfFires_blg_);
+    }
+
+    // for (auto i = vectorOfMaxEvents_.begin(); i != vectorOfMaxEvents_.end(); ++i){
+        
+    //     if( (*i))
+
+
+    // }
+
+    return true;
+}
+
+
+bool MtasDssdTestProcessor::Process(RawEvent &event) {
+    if (!EventProcessor::Process(event)){
+        return false;
+    }
+
+
 
 
     return true;
