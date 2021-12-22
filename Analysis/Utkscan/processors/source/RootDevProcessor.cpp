@@ -14,6 +14,7 @@
 
 #include "DetectorDriver.hpp"
 #include "DetectorLibrary.hpp"
+#include "Globals.hpp"
 #include "HelperFunctions.hpp"
 #include "RawEvent.hpp"
 #include "RootDevProcessor.hpp"
@@ -39,6 +40,7 @@ bool RootDevProcessor::Process(RawEvent &event) {
     static const auto &Events = event.GetSummary("RD", true)->GetList();
 
     for (auto it = Events.begin(); it != Events.end(); it++) {
+        RDstruct = processor_struct::ROOTDEV_DEFAULT_STRUCT;
         RDstruct.energy = (*it)->GetCalibratedEnergy();
         RDstruct.rawEnergy = (*it)->GetEnergy();
         if (Rev == "F") {
@@ -76,8 +78,9 @@ bool RootDevProcessor::Process(RawEvent &event) {
         if (!(*it)->GetQdc().empty()) {
             RDstruct.qdcSums = (*it)->GetQdc();
         }
-        pixie_tree_event_->root_dev_vec_.emplace_back(RDstruct);
-        RDstruct = processor_struct::ROOTDEV_DEFAULT_STRUCT;
+        if (DetectorDriver::get()->GetSysRootOutput()) {
+            pixie_tree_event_->root_dev_vec_.emplace_back(RDstruct);
+        }
     }
 
     EndProcess();
