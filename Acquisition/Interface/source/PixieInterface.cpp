@@ -19,8 +19,9 @@ using namespace std;
 using namespace Display;
 
 //A variable defined by the pxi library containing the path to the crate configuration.
+#ifdef V2_API_MODE
 extern const char *PCISysIniFile;
-
+#endif // V2_API_MODE
 
 set <string> PixieInterface::validConfigKeys;
 
@@ -126,9 +127,10 @@ PixieInterface::PixieInterface(const char *fn) : lock("PixieInterface") {
         }
         exit(EXIT_FAILURE);
     }
-    //Overwrite the default path 'pxisys.ini' with the one specified in the scan file.
+    // Overwrite the default path 'pxisys.ini' with the one specified in the scan file.
+#ifdef V2_API_MODE
     PCISysIniFile = configStrings["global"]["CrateConfig"].c_str();
-
+#endif // V2_API_MODE
 }
 
 PixieInterface::~PixieInterface() {

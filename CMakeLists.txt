@@ -16,6 +16,28 @@ if (CMAKE_COMPILER_IS_GNUCXX)
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fdiagnostics-color=auto")
     endif ()
 
+    execute_process(
+    COMMAND uname -r
+    OUTPUT_VARIABLE KERNEL_VERSION
+    OUTPUT_STRIP_TRAILING_WHITESPACE
+    )
+
+    # Extract the major and minor versions
+    string(REGEX MATCH "^([0-9]+)\\.([0-9]+)" KERNEL_VERSION_SHORT "${KERNEL_VERSION}")
+    string(REGEX MATCH "^([0-9]+)" KERNEL_VERSION_MAJOR "${KERNEL_VERSION_SHORT}")
+
+    # Print out the detected kernel version
+    message(STATUS "Detected Linux kernel version: ${KERNEL_VERSION}")
+
+    # Now you can use these variables for conditional checks
+    if(KERNEL_VERSION_MAJOR GREATER 3 )
+        message(STATUS "Linux kernel version is newer than v3. Expecting PixieSDKv3/v4 in Legacy Mode ")
+        set(PAASS_NEW_KERNEL TRUE)
+    else()
+        set(PAASS_NEW_KERNEL FALSE)
+    endif()
+
+
     set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -pedantic -fPIC")
 endif ()
 
@@ -52,6 +74,12 @@ include(CMakeDependentOption)
 
 #Install options
 option(PAASS_BUILD_ACQ "Build and install Acquisition software" ON)
+if (PAASS_NEW_KERNEL) 
+    option(PAASS_USE_PIXIESDK "Use the new PixieSDK LEGACY API" ON)
+elseif (not PAASS_NEW_KERNEL)
+    option(PAASS_USE_PIXIESDK "Use the new PixieSDK LEGACY API" OFF)
+    mark_as_advanced(PAASS_USE_PIXIESDK)
+endif(PAASS_NEW_KERNEL)
 option(PAASS_BUILD_SETUP "Include the older setup programs in installation" OFF)
 if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
   option(PAASS_BUILD_SCAN_UTILITIES "Build and install the Analysis Utilities" OFF)
@@ -79,7 +107,7 @@ mark_as_advanced(PAASS_EXPORT_COMPILE_COMMANDS)
 if(PAASS_EXPORT_COMPILE_COMMANDS)
     set(CMAKE_EXPORT_COMPILE_COMMANDS ON CACHE BOOL "Generates compile_commands.json, needed for some IDEs among other things" FORCE)
 else ()
-    set(CMAKE_EXPORT_COMPILE_COMMANDS OFF CACHE BOOL "Generates compile_commands.json, needed for some IDEs among other things" FORCE)   
+    set(CMAKE_EXPORT_COMPILE_COMMANDS OFF CACHE BOOL "Generates compile_commands.json, needed for some IDEs among other things" FORCE)
 endif (PAASS_EXPORT_COMPILE_COMMANDS)
 
 #------------------------------------------------------------------------------
@@ -98,16 +126,34 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/Cmake/modules/")
 #Find thread library for poll2 and scanLib
 find_package(Threads REQUIRED)
 
-#Find the PLX Library
-find_package(PLX)
+if (PAASS_BUILD_ACQ AND DEFINED ENV{PLX_SDK_DIR})
+    if  (PAASS_NEW_KERNEL )
+        if ( DEFINED ENV{XIA_PIXIE_SDK})
+            set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{XIA_PIXIE_SDK}/cmake/modules")
+            # find PLX
+            find_package(BroadcomAPI)
+            # find PixieSDK
+            find_package(PixieSDK)
+        elseif(NOT DEFINED ENV{XIA_PIXIE_SDK} )
+            message(FATAL_ERROR "Requested PAASS_BUILD_ACQ, but \"XIA_PIXIE_SDK\" not set!!")
+        endif(DEFINED ENV{XIA_PIXIE_SDK})
+    elseif(NOT PAASS_NEW_KERNEL ) 
+        #Find the PLX Library
+        find_package(PLX)
+        #Find the Pixie Firmware
+        find_package(XIA)
+    endif(PAASS_NEW_KERNEL)
+else()
+    set(PAASS_BUILD_ACQ OFF CACHE  BOOL "Various ENV vars not set or ACQ not requested" FORCE)
+    message(STATUS "Pixie Acq components (poll2): ${PAASS_BUILD_ACQ}.")
+endif(PAASS_BUILD_ACQ AND DEFINED ENV{PLX_SDK_DIR})
 
-#Find the Pixie Firmware
-find_package(XIA)
 
 #Find curses library used for pretty much everything at this point.
 if (PAASS_USE_NCURSES)
     find_package(Curses REQUIRED)
 endif (PAASS_USE_NCURSES)
+
 
 if (CURSES_FOUND)
     add_definitions("-D USE_NCURSES")
@@ -126,9 +172,10 @@ if (PAASS_BUILD_TESTS)
 endif (PAASS_BUILD_TESTS)
 
 if (PAASS_BUILD_ACQ)
-    if (NOT PAASS_BUILD_ACQ_ATTEMPTED AND NOT (PLX_FOUND AND XIA_FOUND))
+    if (NOT PAASS_NEW_KERNEL AND NOT (PLX_FOUND AND XIA_FOUND))
         set(PAASS_BUILD_ACQ OFF CACHE BOOL "Build and install Acquisition" FORCE)
-    else (PLX_FOUND OR XIA_FOUND)
+    elseif (NOT PAASS_NEW_KERNEL AND NOT (PLX_FOUND OR XIA_FOUND))
+        message(STATUS "Found: OLD Kernel, using v2 API")
         #Find the PLX Library
         find_package(PLX REQUIRED)
         link_directories(${PLX_LIBRARY_DIR})
@@ -137,11 +184,31 @@ if (PAASS_BUILD_ACQ)
         find_package(XIA REQUIRED)
         include_directories(${XIA_INCLUDE_DIR})
         link_directories(${XIA_LIBRARY_DIR})
+        ## Add definition to swap the relevant headers
+        add_definitions("-D V2_API_MODE")
+        set(USING_V2_API TRUE)
 
-        #Create pixie.cfg and copy slot_def.set as well as default.set to current.set
-        XIA_CONFIG()
+    elseif(PAASS_NEW_KERNEL AND BroadcomAPI_FOUND AND PixieSDK_FOUND)
+        message(STATUS "Found: New Kernel using new PLX and PixieSDK-Legacy")
+
+        # #Find New PLX
+        find_package(BroadcomAPI REQUIRED)
+        include_directories(${PLX_LIBRARY_DIR})
+        link_directories(${PLX_LIBRARY_DIR})
+
+        #Find the Pixie Firmware
+        find_package(PixieSDK REQUIRED)
+        include_directories(${PIXIESDK_LEGACY_INCLUDE_DIR})
+        link_directories(${PIXIESDK_LEGACY_LIBRARY})
+
+        set(USING_V2_API FALSE)
+
+        message(STATUS "Found: PLX_LIBRARY_DIR = ${PLX_LIBRARY_DIR}")
+        message(STATUS "Found: PIXIESDK_LIBRARY_DIR = ${PIXIESDK_LEGACY_LIBRARY}")
+        
     endif ()
-    set(PAASS_BUILD_ACQ_ATTEMPTED ON CACHE INTERNAL "Build Suite Attempted")
+
+
 endif (PAASS_BUILD_ACQ)
 
 #Find ROOT if USE_ROOT was set.
