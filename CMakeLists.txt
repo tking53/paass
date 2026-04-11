@@ -31,7 +31,6 @@ if (CMAKE_COMPILER_IS_GNUCXX)
 
     # Now you can use these variables for conditional checks
     if(KERNEL_VERSION_MAJOR GREATER 3 )
-        message(STATUS "Linux kernel version is newer than v3. Expecting PixieSDKv3/v4 in Legacy Mode ")
         set(PAASS_NEW_KERNEL TRUE)
     else()
         set(PAASS_NEW_KERNEL FALSE)
@@ -73,14 +72,7 @@ endif (CMAKE_BUILD_TYPE MATCHES "Debug")
 include(CMakeDependentOption)
 
 #Install options
-option(PAASS_BUILD_ACQ "Build and install Acquisition software" ON)
-if (PAASS_NEW_KERNEL) 
-    option(PAASS_USE_PIXIESDK "Use the new PixieSDK LEGACY API" ON)
-elseif (NOT PAASS_NEW_KERNEL)
-    option(PAASS_USE_PIXIESDK "Use the new PixieSDK LEGACY API" OFF)
-    mark_as_advanced(PAASS_USE_PIXIESDK)
-endif(PAASS_NEW_KERNEL)
-option(PAASS_BUILD_SETUP "Include the older setup programs in installation" OFF)
+option(PAASS_BUILD_ACQ "Build and install Acquisition software" OFF)
 if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
   option(PAASS_BUILD_SCAN_UTILITIES "Build and install the Analysis Utilities" OFF)
   option(PAASS_BUILD_SHARED_LIBS "Install only scan libraries" OFF)
@@ -97,6 +89,9 @@ option(PAASS_USE_ROOT "Use ROOT (Currently REQUIRED!!)" ON)
 mark_as_advanced(PAASS_USE_NCURSES)
 mark_as_advanced(PAASS_USE_DAMM)
 mark_as_advanced(PAASS_USE_ROOT)
+mark_as_advanced(PAASS_BUILD_SCAN_UTILITIES)
+mark_as_advanced(PAASS_BUILD_SHARED_LIBS)
+mark_as_advanced(PAASS_BUILD_TESTS)
 
 option(PAASS_EXPORT_COMPILE_COMMANDS "CMAKE_EXPORT_COMPILE_COMMANDS WRAPPER" ON)
 mark_as_advanced(PAASS_EXPORT_COMPILE_COMMANDS)
@@ -126,29 +121,6 @@ set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "${CMAKE_SOURCE_DIR}/Cmake/modules/")
 #Find thread library for poll2 and scanLib
 find_package(Threads REQUIRED)
 
-if (PAASS_BUILD_ACQ AND DEFINED ENV{PLX_SDK_DIR})
-    if  (PAASS_NEW_KERNEL )
-        if ( DEFINED ENV{XIA_PIXIE_SDK})
-            set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{XIA_PIXIE_SDK}/cmake/modules")
-            # find PLX
-            find_package(BroadcomAPI)
-            # find PixieSDK
-            find_package(PixieSDK)
-        elseif(NOT DEFINED ENV{XIA_PIXIE_SDK} )
-            message(FATAL_ERROR "Requested PAASS_BUILD_ACQ, but \"XIA_PIXIE_SDK\" not set!!")
-        endif(DEFINED ENV{XIA_PIXIE_SDK})
-    elseif(NOT PAASS_NEW_KERNEL ) 
-        #Find the PLX Library
-        find_package(PLX)
-        #Find the Pixie Firmware
-        find_package(XIA)
-    endif(PAASS_NEW_KERNEL)
-else()
-    set(PAASS_BUILD_ACQ OFF CACHE  BOOL "Various ENV vars not set or ACQ not requested" FORCE)
-    message(STATUS "Pixie Acq components (poll2): ${PAASS_BUILD_ACQ}.")
-endif(PAASS_BUILD_ACQ AND DEFINED ENV{PLX_SDK_DIR})
-
-
 #Find curses library used for pretty much everything at this point.
 if (PAASS_USE_NCURSES)
     find_package(Curses REQUIRED)
@@ -171,45 +143,150 @@ if (PAASS_BUILD_TESTS)
     include_directories(${UNITTEST++_INCLUDE_DIR})
 endif (PAASS_BUILD_TESTS)
 
-if (PAASS_BUILD_ACQ)
-    if (NOT PAASS_NEW_KERNEL AND NOT (PLX_FOUND AND XIA_FOUND))
+if (PAASS_BUILD_ACQ AND DEFINED ENV{PLX_SDK_DIR})
+    set(PAASS_ACQ_API "Auto" CACHE STRING "Acquisition API: Auto, PixieSDK-Legacy, or XIA_API")
+    set_property(CACHE PAASS_ACQ_API PROPERTY STRINGS Auto PixieSDK-Legacy XIA_API)
+    message(STATUS "[PAASS::ACQ] PAASS Requested API: ${PAASS_ACQ_API}")
+    option(PAASS_BUILD_SETUP "Include the older setup programs in installation" OFF)
+
+
+
+    # Find all the things, and decide which API to use based on the override or the AUTO mode
+    if (PAASS_ACQ_API STREQUAL "PixieSDK-Legacy")
+        if (DEFINED ENV{XIA_PIXIE_SDK})
+            set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{XIA_PIXIE_SDK}/cmake/modules")
+            find_package(BroadcomAPI)
+            find_package(PixieSDK)
+
+            if (BroadcomAPI_FOUND AND PixieSDK_FOUND)
+                set(PAASS_ACQ_API_RESOLVED "PixieSDK-Legacy")
+            else()
+                message(FATAL_ERROR "[PAASS::ACQ] PAASS_ACQ_API=PixieSDK-Legacy requested, but BroadcomAPI/PixieSDK were not found.")
+            endif()
+        else()
+            message(FATAL_ERROR "[PAASS::ACQ] PAASS_ACQ_API=PixieSDK-Legacy requested, but XIA_PIXIE_SDK is not set.")
+        endif()
+
+    elseif (PAASS_ACQ_API STREQUAL "XIA_API")
+        if (DEFINED ENV{XIA_FIRMWARE_DIR})
+            find_package(PLX)
+            find_package(XIA)
+
+            if (PLX_FOUND AND XIA_FOUND)
+                set(PAASS_ACQ_API_RESOLVED "XIA_API")
+            else()
+                message(FATAL_ERROR "[PAASS::ACQ] PAASS_ACQ_API=XIA_API requested, but PLX/XIA were not found.")
+            endif()
+        else()
+            message(FATAL_ERROR "[PAASS::ACQ] PAASS_ACQ_API=XIA_API requested, but XIA_FIRMWARE_DIR is not set.")
+        endif()
+
+    elseif (PAASS_ACQ_API STREQUAL "Auto")
+        if (PAASS_NEW_KERNEL)
+            message(STATUS "[PAASS::ACQ] New kernel detected; trying PixieSDK-Legacy first")
+
+            if (DEFINED ENV{XIA_PIXIE_SDK})
+                set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} "$ENV{XIA_PIXIE_SDK}/cmake/modules")
+                find_package(BroadcomAPI REQUIRED)
+                find_package(PixieSDK REQUIRED)
+            endif()
+
+            if (BroadcomAPI_FOUND AND PixieSDK_FOUND)
+                set(PAASS_ACQ_API_RESOLVED "PixieSDK-Legacy")
+                message(STATUS "[PAASS::ACQ] Resolved acquisition API: PixieSDK-Legacy")
+            else()
+                message(STATUS "[PAASS::ACQ] PixieSDK-Legacy not found; falling back to XIA_API")
+
+                if (DEFINED ENV{XIA_FIRMWARE_DIR})
+                    find_package(PLX REQUIRED)
+                    find_package(XIA REQUIRED)
+
+                    if (PLX_FOUND AND XIA_FOUND)
+                        set(PAASS_ACQ_API_RESOLVED "XIA_API")
+                        message(STATUS "[PAASS::ACQ] Resolved acquisition API: XIA_API")
+                    else()
+                        set(PAASS_BUILD_ACQ OFF CACHE BOOL "Build and install Acquisition" FORCE)
+                        message(STATUS "[PAASS::ACQ] Neither PixieSDK-Legacy nor XIA_API dependencies were found; disabling acquisition build.")
+                    endif()
+                else()
+                    set(PAASS_BUILD_ACQ OFF CACHE BOOL "Build and install Acquisition" FORCE)
+                    message(STATUS "[PAASS::ACQ] \"XIA_FIRMWARE_DIR\" or \"XIA_PIXIE_SDK\" not set; disabling acquisition build.")
+                endif()
+            endif()
+        else()
+            if (DEFINED ENV{XIA_FIRMWARE_DIR})
+                find_package(PLX REQUIRED)
+                find_package(XIA REQUIRED)
+
+                if (PLX_FOUND AND XIA_FOUND)
+                    set(PAASS_ACQ_API_RESOLVED "XIA_API")
+                    message(STATUS "[PAASS::ACQ] Resolved acquisition API: XIA_API")
+                else()
+                    set(PAASS_BUILD_ACQ OFF CACHE BOOL "Build and install Acquisition" FORCE)
+                    message(STATUS "[PAASS::ACQ] Old-kernel XIA_API dependencies not found; disabling acquisition build.")
+                endif()
+            else()
+                set(PAASS_BUILD_ACQ OFF CACHE BOOL "Build and install Acquisition" FORCE)
+                message(STATUS "[PAASS::ACQ] XIA_FIRMWARE_DIR not set; disabling acquisition build.")
+            endif()
+        endif()
+
+    else()
+        message(FATAL_ERROR "[PAASS::ACQ] Unknown PAASS_ACQ_API='${PAASS_ACQ_API}'. Valid values: Auto, PixieSDK-Legacy, XIA_API")
+    endif()
+
+
+    if (PAASS_ACQ_API_RESOLVED STREQUAL "XIA_API")
+        message(STATUS "[PAASS::ACQ] Configuring acquisition for XIA_API (v2 API mode)")
+
+        if (PLX_FOUND AND XIA_FOUND)
+            link_directories(${PLX_LIBRARY_DIR})
+            # need to add PLX_LIBRARY_DIR to the RPATH so the linker can find the PLX lib at runtime, otherwise we have to add it to the LD_LIBRARY_PATH
+            set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+            # list(APPEND CMAKE_INSTALL_RPATH "${PLX_LIBRARY_DIR}")
+
+            include_directories(${XIA_INCLUDE_DIR})
+            link_directories(${XIA_LIBRARY_DIR})
+
+            add_definitions("-D V2_API_MODE")
+            set(USING_V2_API TRUE)
+
+            message(STATUS "[PAASS::ACQ] Found: PLX_LIBRARY_DIR = ${PLX_LIBRARY_DIR}")
+            message(STATUS "[PAASS::ACQ] Found: XIA_LIBRARY_DIR = ${XIA_LIBRARY_DIR}")
+            message(STATUS "[PAASS::ACQ] Found: XIA_INCLUDE_DIR = ${XIA_INCLUDE_DIR}")
+        endif(PLX_FOUND AND XIA_FOUND)
+
+    elseif (PAASS_ACQ_API_RESOLVED STREQUAL "PixieSDK-Legacy")
+        message(STATUS "[PAASS::ACQ] Configuring acquisition for PixieSDK-Legacy mode")
+
+        if (BroadcomAPI_FOUND AND PixieSDK_FOUND)
+            include_directories(${PLX_LIBRARY_DIR})
+            link_directories(${PLX_LIBRARY_DIR})
+            include_directories(${PIXIESDK_LEGACY_INCLUDE_DIR})
+            link_directories(${PIXIESDK_LEGACY_LIBRARY})
+
+            set(USING_V2_API FALSE)
+
+            message(STATUS "[PAASS::ACQ] Found: PLX_LIBRARY_DIR = ${PLX_LIBRARY_DIR}")
+            message(STATUS "[PAASS::ACQ] Found: PIXIESDK_LIBRARY_DIR = ${PIXIESDK_LEGACY_LIBRARY}")
+            message(STATUS "[PAASS::ACQ] Found: PIXIESDK_INCLUDE_DIR = ${PIXIESDK_LEGACY_INCLUDE_DIR}")
+
+        endif(BroadcomAPI_FOUND AND PixieSDK_FOUND)
+            
+    else()
         set(PAASS_BUILD_ACQ OFF CACHE BOOL "Build and install Acquisition" FORCE)
-    elseif (NOT PAASS_NEW_KERNEL AND NOT (PLX_FOUND OR XIA_FOUND))
-        message(STATUS "Found: OLD Kernel, using v2 API")
-        #Find the PLX Library
-        find_package(PLX REQUIRED)
-        link_directories(${PLX_LIBRARY_DIR})
+        message(WARNING "[PAASS::ACQ] No resolved acquisition API; disabling acquisition build.")
+    endif()
 
-        #Find the Pixie Firmware
-        find_package(XIA REQUIRED)
-        include_directories(${XIA_INCLUDE_DIR})
-        link_directories(${XIA_LIBRARY_DIR})
-        ## Add definition to swap the relevant headers
-        add_definitions("-D V2_API_MODE")
-        set(USING_V2_API TRUE)
+    if(PAASS_BUILD_SETUP)
+        message(STATUS "[PAASS::ACQ] Setup programs will be included in installation.")
+    endif(PAASS_BUILD_SETUP)
 
-    elseif(PAASS_NEW_KERNEL AND BroadcomAPI_FOUND AND PixieSDK_FOUND)
-        message(STATUS "Found: New Kernel using new PLX and PixieSDK-Legacy")
+else()
+    set(PAASS_BUILD_ACQ OFF CACHE BOOL "Various ENV vars not set or ACQ not requested" FORCE)
+    message(STATUS "[PAASS::ACQ] PAASS_BUILD_ACQ: ${PAASS_BUILD_ACQ}.")
+endif()
 
-        # #Find New PLX
-        find_package(BroadcomAPI REQUIRED)
-        include_directories(${PLX_LIBRARY_DIR})
-        link_directories(${PLX_LIBRARY_DIR})
-
-        #Find the Pixie Firmware
-        find_package(PixieSDK REQUIRED)
-        include_directories(${PIXIESDK_LEGACY_INCLUDE_DIR})
-        link_directories(${PIXIESDK_LEGACY_LIBRARY})
-
-        set(USING_V2_API FALSE)
-
-        message(STATUS "Found: PLX_LIBRARY_DIR = ${PLX_LIBRARY_DIR}")
-        message(STATUS "Found: PIXIESDK_LIBRARY_DIR = ${PIXIESDK_LEGACY_LIBRARY}")
-        
-    endif ()
-
-
-endif (PAASS_BUILD_ACQ)
 
 #Find ROOT if USE_ROOT was set.
 if (PAASS_USE_ROOT)
@@ -269,23 +346,23 @@ if (PAASS_USE_ROOT)
     message(FATAL_ERROR "Minimum ROOT version is 6.10.00.")
   endif (${ROOT_VERSION} VERSION_LESS "6.10")
   mark_as_advanced(FORCE GENREFLEX_EXECUTABLE ROOTCINT_EXECUTABLE ROOT_CONFIG_EXECUTABLE)
-  if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
-    include_directories(${ROOT_INCLUDE_DIR})
-    link_directories(${ROOT_LIBRARY_DIR})
-  else() 
+  #if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
+  #  include_directories(${ROOT_INCLUDE_DIR})
+  #  link_directories(${ROOT_LIBRARY_DIR})
+  #else() 
     include_directories(SYSTEM ${ROOT_INCLUDE_DIR})
     link_directories(SYSTEM ${ROOT_LIBRARY_DIR})
-  endif()
+  #endif()
   add_definitions("-D USE_ROOT")
   add_definitions("-D useroot")
   if (ROOT_HAS_CXX11 MATCHES "yes")
-    message(STATUS "ROOT was built with cxx11. Setting CMAKE_CXX_STANDARD to match")
+    message(STATUS "[PAASS] ROOT was built with cxx11. Setting CMAKE_CXX_STANDARD to match")
     set(CMAKE_CXX_STANDARD 11)
   elseif (ROOT_HAS_CXX14 MATCHES "yes")
-    message(STATUS "ROOT was built with cxx14. Setting CMAKE_CXX_STANDARD to match")
+    message(STATUS "[PAASS] ROOT was built with cxx14. Setting CMAKE_CXX_STANDARD to match")
     set(CMAKE_CXX_STANDARD 14)
   elseif (ROOT_HAS_CXX17 MATCHES "yes")
-    message(STATUS "ROOT was built with cxx17. Setting CMAKE_CXX_STANDARD to match")
+    message(STATUS "[PAASS] ROOT was built with cxx17. Setting CMAKE_CXX_STANDARD to match")
     set(CMAKE_CXX_STANDARD 17)
   endif()
 endif (PAASS_USE_ROOT)
