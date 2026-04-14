@@ -1390,7 +1390,7 @@ PollOutputFile::GetNextFileName(unsigned int &run_num_, std::string prefix,
                                 bool continueRun /*=false*/) {
     std::stringstream filename;
     filename << output_directory << prefix << "_" << std::setfill('0')
-             << std::setw(3) << run_num_;
+             << std::setw(3) << run_num_ << "-0";
 
     if (output_format == 0) { filename << ".ldf"; }
     else if (output_format == 1) { filename << ".pld"; }
@@ -1406,7 +1406,7 @@ PollOutputFile::GetNextFileName(unsigned int &run_num_, std::string prefix,
                      << std::setw(3) << run_num_ << "-" << ++suffix;
         } else {
             filename << output_directory << prefix << "_" << std::setfill('0')
-                     << std::setw(3) << ++run_num_;
+                     << std::setw(3) << ++run_num_ << "-0";
         }
 
         if (output_format == 0) { filename << ".ldf"; }
