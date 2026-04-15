@@ -130,6 +130,8 @@ private:
     bool had_error;
     bool file_open;
     time_t raw_time;
+    time_t run_start_time; /// Epoch time when the current acquisition run started.
+    time_t file_start_time; /// Epoch time when the current output file was opened.
 
     // System MCA flags
     bool do_MCA_run; /// Set to true when the "mca" command is received

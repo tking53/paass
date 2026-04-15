@@ -179,6 +179,8 @@ Poll::Poll() :
         had_error(false), //Set to true when a file is opened.
         file_open(false),
         raw_time(0), // Set to true when the "mca" command is received
+        run_start_time(0),
+        file_start_time(0),
         do_MCA_run(false), // Set to true when automatically posting to elog
         // Run control variables
         boot_fast(false),
@@ -427,6 +429,7 @@ bool Poll::OpenOutputFile(bool continueRun){
     if(!pac_mode){ client->SendMessage((char *)"$OPEN_FILE", 12); }
 
     file_open = true;
+    time(&file_start_time);
 
     return true;
 }
@@ -470,7 +473,10 @@ int Poll::write_data(word_t *data, unsigned int nWords){
     if(current_filesize + (std::streampos)(4*nWords + 65552) > MAX_FILE_SIZE){
         // Adding nWords plus 2 EOF buffers to the file will push it over MAX_FILE_SIZE.
         // Open a new output file instead
-        std::cout << sys_message_head << "Maximum ifile size reached. New output file will be created.\n";
+        time_t now;
+        time(&now);
+        std::cout << sys_message_head << "Maximum file size reached. New output file will be created.\n";
+        std::cout << sys_message_head << "Current Time is " << ctime(&now);
         std::cout << sys_message_head << "Current filesize is " << current_filesize + (std::streampos)65552 << " bytes.\n";
         CloseOutputFile(true);
         OpenOutputFile(true);
@@ -745,7 +751,13 @@ bool Poll::stop_run() {
         std::stringstream output;
         output << "Run " << output_file.GetRunNumber() << " time";
         Display::LeaderPrint(output.str());
-        std::cout << statsHandler->GetTotalTime() << "s\n";
+        time_t now;
+        time(&now);
+        if (run_start_time > 0) {
+            std::cout << difftime(now, run_start_time) << "s\n";
+        } else {
+            std::cout << "0s\n";
+        }
 
     }
 
@@ -1726,7 +1738,6 @@ void Poll::CommandControl(){
 
 /// Function to control the gathering and recording of PIXIE data
 void Poll::RunControl(){
-    time_t acqStartTime;
     time_t currentTime;
     while(true){
         if(kill_all){ // Supersedes all other commands
@@ -1806,10 +1817,10 @@ void Poll::RunControl(){
 
                 //Start list mode
                 if(pif->StartListModeRun(LIST_MODE_RUN, NEW_RUN)) {
-                    time(&acqStartTime);
+                    time(&run_start_time);
                     if (record_data) std::cout << "Run " << output_file.GetRunNumber();
                     else std::cout << "Acq";
-                    std::cout << " started on " << ctime(&acqStartTime);
+                    std::cout << " started on " << ctime(&run_start_time);
 
                     acq_running = true;
                     startTime = usGetTime(0);
@@ -1832,7 +1843,7 @@ void Poll::RunControl(){
             // Check the run time.
             time(&currentTime);
 
-            if(runTime > 0.0 && difftime(currentTime, acqStartTime) >= runTime)
+            if(runTime > 0.0 && run_start_time > 0 && difftime(currentTime, run_start_time) >= runTime)
                 stop_run(); // Handle this cleanly.
 
             //Handle a stop signal
@@ -1893,6 +1904,8 @@ void Poll::RunControl(){
                 //Reset status flags
                 do_stop_acq = false;
                 acq_running = false;
+                run_start_time = 0;
+                file_start_time = 0;
             } //if (do_stop_acq) -- End of handling a stop acq flag
 
             // Read data from the modules.
@@ -1911,6 +1924,8 @@ void Poll::RunControl(){
 void Poll::UpdateStatus() {
     //Build status string
     std::stringstream status;
+    time_t now;
+    time(&now);
     if (had_error) status << Display::ErrorStr("[ERROR]");
     else if (acq_running && record_data) status << Display::OkayStr("[ACQ]");
     else if (acq_running && !record_data) status << Display::WarningStr("[ACQ]");
@@ -1924,8 +1939,12 @@ void Poll::UpdateStatus() {
         status << " of " << mca_args.GetTotalTime() << "s";
     }
     else{
-        //Add run time to status
-        status << " " << (long long) statsHandler->GetTotalTime() << "s";
+        // Add elapsed run time to status (resets at each run start).
+        if (run_start_time > 0) {
+            status << " " << (long long) difftime(now, run_start_time) << "s";
+        } else {
+            status << " 0s";
+        }
         //Add data rate to status
         status << " " << humanReadable(statsHandler->GetTotalDataRate()) << "/s";
     }
@@ -1933,7 +1952,10 @@ void Poll::UpdateStatus() {
     if (file_open) {
         if (acq_running && !record_data) status << TermColors::DkYellow;
         //Add file size to status
-        status << " " << humanReadable(output_file.GetFilesize());
+        status << " | " << humanReadable(output_file.GetFilesize());
+        if (file_start_time > 0 ) {
+                status << " " << (long long)difftime(now, file_start_time) << "s";
+        }
         status << " " << output_file.GetCurrentFilename();
         /* status << " Run Start Time: " << start */
         if (acq_running && !record_data) status << TermColors::Reset;
