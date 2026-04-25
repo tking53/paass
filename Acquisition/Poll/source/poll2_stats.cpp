@@ -76,6 +76,20 @@ StatsHandler::~StatsHandler() {
     delete[] dataTotal;
 }
 
+void StatsHandler::SendBeginRun(bool data2disk) {
+    if (!is_able_to_send) { return; }
+    if (data2disk) {
+        client->SendMessage((char *)"$BEGIN_RUN", 11);
+    } else {
+        client->SendMessage((char *)"$BEGIN_VME", 11);
+    }
+}
+
+void StatsHandler::SendEndRun() {
+    if (!is_able_to_send) { return; }
+    client->SendMessage((char *)"$END_RUN", 9);
+}
+
 void StatsHandler::AddEvent(unsigned int mod, unsigned int ch, size_t size,
                             int delta_/*=1*/) {
     if (mod >= numCards) {

@@ -1818,6 +1818,7 @@ void Poll::RunControl(){
                 //Start list mode
                 if(pif->StartListModeRun(LIST_MODE_RUN, NEW_RUN)) {
                     time(&run_start_time);
+                    statsHandler->SendBeginRun(record_data);
                     if (record_data) std::cout << "Run " << output_file.GetRunNumber();
                     else std::cout << "Acq";
                     std::cout << " started on " << ctime(&run_start_time);
@@ -1900,6 +1901,8 @@ void Poll::RunControl(){
 
                 //Close the output file
                 if(output_file.IsOpen()) CloseOutputFile();
+
+                statsHandler->SendEndRun();
 
                 //Reset status flags
                 do_stop_acq = false;

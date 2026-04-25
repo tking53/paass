@@ -55,12 +55,21 @@ int main(int argc, char *argv[]) {
             pserv->RecvMessage(buffer, msg_size);
             char *ptr = buffer;
 
-            if (strcmp(buffer, "$KILL_SOCKET") == 0) {
+            if (strcmp(ptr, "$KILL_SOCKET") == 0) {
                 cout << "  Received KILL_SOCKET flag from mainmonitor...\n\n";
                 break;
+            } else if (strcmp(ptr, "$BEGIN_RUN") == 0) {
+                cout << "  Received BEGIN_RUN flag...\n\n";
+                continue;
+            } else if (strcmp(ptr, "$BEGIN_VME") == 0) {
+                cout << "  Received BEGIN_VME flag...\n\n";
+                continue;
+            }else if (strcmp(ptr, "$END_RUN") == 0) {
+                cout << "  Received END_RUN flag...\n\n";
+                continue;
+            } else {
+                system("clear");
             }
-
-            system("clear");
 
             // cout << " Received:\t" << recv_bytes << " bytes\n";
 

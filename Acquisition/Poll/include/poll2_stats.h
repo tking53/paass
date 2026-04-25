@@ -37,6 +37,12 @@ public:
 
     bool CanSend() { return is_able_to_send; }
 
+    /// Send a monitor control notice for the start of a run.
+    void SendBeginRun(bool data2disk);
+
+    /// Send a monitor control notice for the end of a run.
+    void SendEndRun();
+
     ///Clear the stats.
     void Clear();
 
