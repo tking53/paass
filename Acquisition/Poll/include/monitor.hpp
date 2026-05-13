@@ -20,11 +20,10 @@
 #include <string>
 #include <vector>
 
-using namespace std;
 
 class monitor {
    protected:
-    string ObjName;
+   std::string ObjName;
     int socketToUse = 0;                            // submonitor socket to listen on
     static const int MAX_NUM_SUBMONITORS = 6;       // max number of submonitors. Limited since each needs its own port
     static const int PREDEFINED_POLL2_PORT = 5556;  // hardcoded POLL2 master socket.
@@ -37,9 +36,12 @@ class monitor {
     bool useColor = false;                     // do we colozize the output
     bool useLogging = false;                   // do we log to text file
     bool dummyMode = false;                    // are we in dummymode for debugging
-    string cThreshGroup = "defaultRateGroup";  // colorize rate group
+    bool useGrafana = false;                // should mainmonitor expose grafana metrics
+   std::string cThreshGroup = "defaultRateGroup";  // colorize rate group
+   std::string prometheusBindAddress = "localhost";
+    int prometheusPort = 9101;
 
-    vector<pair<int, int>> deadChan;  // list of "dead" chans for dummy mode
+    std::vector<std::pair<int, int>> deadChan;  // list of "dead" chans for dummy mode
 
     int numRowsOfMods = 1;  // number of rows to put the modules on:
 
@@ -110,7 +112,7 @@ class monitor {
     monitor() : ObjName("defaultmonitor"){};
 
     // Constuctor taking exe name as argument as string
-    monitor(string a) : ObjName(a){};
+    monitor(std::string a) : ObjName(a){};
 
     // Deconstructor
     ~monitor() = default;
@@ -122,19 +124,19 @@ class monitor {
     void DecodeUdpMsg(char *prt, poll2_UDP_msg &ret, int &num_modules, bool &first_packet);
 
     // Overload for dummy mode. we remove the char buff from the arg list
-    void DecodeUdpMsg(poll2_UDP_msg &ret, int &num_modules, bool &first_packet, vector<pair<int, int>> &deadChan);
+    void DecodeUdpMsg(poll2_UDP_msg &ret, int &num_modules, bool &first_packet, std::vector<std::pair<int, int>> &deadChan);
 
     // Expects input rate in Hz. Add suffix, and truncate to fit.
-    pair<string, ColorCode> GetChanRateString(double chanRateInput, const colorThresholds &cThresh);
+    std::pair<std::string, ColorCode> GetChanRateString(double chanRateInput, const colorThresholds &cThresh);
 
     // Parse out the channel total string (make sci notation and truncate)
-    pair<string, ColorCode> GetChanTotalString(unsigned int input_);
+    std::pair<std::string, ColorCode> GetChanTotalString(unsigned int input_);
 
     // Expects input rate in B/s
-    string GetRateString(double input_, const bool &useColorOut);
+    std::string GetRateString(double input_, const bool &useColorOut);
 
     // Expects input time in seconds
-    string GetTimeString(double input_);
+    std::string GetTimeString(double input_);
 
     /* Print help dialogue for command line options. */
     void help(const char *progName_);
@@ -161,9 +163,9 @@ class monitor {
     void SetColorOut(const bool &a) { useColor = a; };
 
     // set Color Thresh group
-    virtual void SetColorThreshGroup(const string &threshGroup) { cThreshGroup = threshGroup; };
+    virtual void SetColorThreshGroup(const std::string &threshGroup) { cThreshGroup = threshGroup; };
 
-    string GetColorThreshGroup() { return cThreshGroup; };
+    std::string GetColorThreshGroup() { return cThreshGroup; };
 
     // Set if to write the txt log out. location of log is currently undecided. Im thinking /tmp but i dont have a good handle on what it will grow to (effectivly infinity but thats bad so we need to do something smart here)
     void SetLoggerOut(const bool &a) { useLogging = a; };
@@ -174,8 +176,26 @@ class monitor {
     // Get status of logger out bool
     bool GetLoggerOut() { return useLogging; };
 
+    // Enable or disable the optional Prometheus exporter.
+    void SetGrafanaEnabled(const bool &a) { useGrafana = a; };
+
+    // Check whether the optional Grafana exporter is enabled.
+    bool GetGrafanaEnabled() { return useGrafana; };
+
+    // Set the Prometheus bind address used by mainmonitor.
+    void SetPrometheusBindAddress(const std::string &a) { prometheusBindAddress = a; };
+
+    // Get the Prometheus bind address used by mainmonitor.
+    const std::string &GetPrometheusBindAddress() { return prometheusBindAddress; };
+
+    // Set the Prometheus TCP port used by mainmonitor.
+    void SetPrometheusPort(const int &a) { prometheusPort = a; };
+
+    // Get the Prometheus TCP port used by mainmonitor.
+    const int &GetPrometheusPort() { return prometheusPort; };
+
     // Set ColorThresholds struct based on passed cli flag.
-    void SetColorThresholdStruct(colorThresholds &cThresh, const string &rateGroup);
+    void SetColorThresholdStruct(colorThresholds &cThresh, const std::string &rateGroup);
 
     // Get to use based on current table of thresholds.
     ColorCode GetColorFromThresholds(const double &input, const colorThresholds &cThresh);
@@ -202,7 +222,7 @@ class monitor {
     ///@param [in] pcode : ENUM color code from ColorCode group. Which is Defined in monitor.hpp
     ///@param [in] showcolor : Are we in colorful mode or not
     ///@return Returns either the ANSI escape string or an empty zero length string.
-    static string GetEscSequence(ColorCode pcode, bool showcolor) {
+    static std::string GetEscSequence(ColorCode pcode, bool showcolor) {
         ;
         if (showcolor) {
             return "\033[" + std::to_string(pcode) + "m";
@@ -211,7 +231,7 @@ class monitor {
         }
     }
 
-    vector<pair<int, int>> *GetDeadChanList() { return &deadChan; };
+    std::vector<std::pair<int, int>> *GetDeadChanList() { return &deadChan; };
 };
 
 #endif

@@ -10,8 +10,6 @@
 
 #include "submonitor.hpp"
 
-using namespace std;
-
 submonitor::submonitor() : monitor("submonitor") {
     this->poll_server = new Server();
 }
@@ -25,9 +23,10 @@ int main(int argc, char *argv[]) {
     } else if (parRetVal == 0 && smon.GetSocketToUse() != 0) {
         smon.isInit = true;
     } else {
-        cout << endl
-             << endl
-             << smon.GetEscSequence(monitor::FG_RED, true) << "Argument Error:: \"-s\" flag (socket) is required for `submonitor` operation" << smon.GetEscSequence(monitor::FG_DEFAULT, true) << endl;
+        std::cout << std::endl
+                  << std::endl
+                  << smon.GetEscSequence(monitor::FG_RED, true) << "Argument Error:: \"-s\" flag (socket) is required for `submonitor` operation" 
+                  << smon.GetEscSequence(monitor::FG_DEFAULT, true) << std::endl;
         smon.help(smon.GetName());
         return 1;
     }
@@ -48,24 +47,24 @@ int main(int argc, char *argv[]) {
     monitor::poll2_UDP_msg pUdpMsg;
 
     if (pserv->Init(smon.GetSocketToUse())) {
-        cout << " Waiting for first stats packet on port " << smon.GetSocketToUse() << " ...\n";
+        std::cout << " Waiting for first stats packet on port " << smon.GetSocketToUse() << " ...\n";
 
         while (true) {
-            cout << std::setprecision(2);
+            std::cout << std::setprecision(2);
             pserv->RecvMessage(buffer, msg_size);
             char *ptr = buffer;
 
             if (strcmp(ptr, "$KILL_SOCKET") == 0) {
-                cout << "  Received KILL_SOCKET flag from mainmonitor...\n\n";
+                std::cout << "  Received KILL_SOCKET flag from mainmonitor...\n\n";
                 break;
             } else if (strcmp(ptr, "$BEGIN_RUN") == 0) {
-                cout << "  Received BEGIN_RUN flag...\n\n";
+                std::cout << "  Received BEGIN_RUN flag...\n\n";
                 continue;
             } else if (strcmp(ptr, "$BEGIN_VME") == 0) {
-                cout << "  Received BEGIN_VME flag...\n\n";
+                std::cout << "  Received BEGIN_VME flag...\n\n";
                 continue;
             }else if (strcmp(ptr, "$END_RUN") == 0) {
-                cout << "  Received END_RUN flag...\n\n";
+                std::cout << "  Received END_RUN flag...\n\n";
                 continue;
             } else {
                 system("clear");

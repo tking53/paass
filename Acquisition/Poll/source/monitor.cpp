@@ -10,6 +10,28 @@
 
 #include "monitor.hpp"
 
+#include <cerrno>
+#include <cstdlib>
+
+namespace {
+
+bool ParsePositivePort(const char *input, int &port) {
+    if (input == NULL || *input == '\0') {
+        return false;
+    }
+
+    char *end = NULL;
+    errno = 0;
+    long parsed = strtol(input, &end, 10);
+    if (errno != 0 || end == input || *end != '\0' || parsed < 1 || parsed > 65535) {
+        return false;
+    }
+
+    port = static_cast<int>(parsed);
+    return true;
+}
+}  // namespace
+
 // Return the order of magnitude of a number
 double monitor::GetOrder(unsigned int base, unsigned int &power) {
     double test = 1;
@@ -24,7 +46,7 @@ double monitor::GetOrder(unsigned int base, unsigned int &power) {
 }
 
 // Expects input rate in Hz
-pair<string, monitor::ColorCode> monitor::GetChanRateString(double chanRateInput, const colorThresholds &cThresh) {
+std::pair<std::string, monitor::ColorCode> monitor::GetChanRateString(double chanRateInput, const colorThresholds &cThresh) {
     if (chanRateInput < 0.0) {
         chanRateInput *= -1;
     }
@@ -45,16 +67,16 @@ pair<string, monitor::ColorCode> monitor::GetChanRateString(double chanRateInput
         stream << chanRateInput << " ";
     }  // Hz
 
-    string output = stream.str();
+    std::string output = stream.str();
 
     output = output.substr(0, output.find_last_not_of(".", 3) + 1) + output.substr(output.length() - 1, 1);
 
     colorToUse = GetColorFromThresholds(chanRateInput, cThresh);
 
-    return make_pair(output, colorToUse);
+    return std::make_pair(output, colorToUse);
 }
 
-pair<string, monitor::ColorCode> monitor::GetChanTotalString(unsigned int chanTotalString) {
+std::pair<std::string, monitor::ColorCode> monitor::GetChanTotalString(unsigned int chanTotalString) {
     std::stringstream stream;
     unsigned int power = 0;
     double order = GetOrder(chanTotalString, power);
@@ -81,7 +103,7 @@ pair<string, monitor::ColorCode> monitor::GetChanTotalString(unsigned int chanTo
         output = stream2.str();
     }
 
-    return make_pair(output, FG_DEFAULT);
+    return std::make_pair(output, FG_DEFAULT);
 }
 
 // Expects input rate in B/s
@@ -154,64 +176,87 @@ std::string monitor::GetTimeString(double input_) {
 int monitor::ParseCliFlags(int &argc, char *argv[], monitor *obj) {
     struct option longOpts[] = {
         {"color", optional_argument, NULL, 'c'},
-        {"log", no_argument, NULL, 'l'},
+        {"grafana", no_argument, NULL, 'g'},
+        {"prometheus-port", required_argument, NULL, 'p'},
+        {"prometheus-address", required_argument, NULL, 'a'},
         {"rows", required_argument, NULL, 'r'},
         {"socket", required_argument, NULL, 's'},
         {"help", no_argument, NULL, 'h'},
-        {"?", no_argument, NULL, 0},
         {"dummy", no_argument, NULL, 'd'},
+        {"?", no_argument, NULL, 0},
         {NULL, no_argument, NULL, 0}};
     int idx = 0;
     int retval = 0;
-    while ((retval = getopt_long(argc, argv, "dcls:r:h", longOpts, &idx)) != -1) {
+    bool overrodePrometheusOptions = false;
+    while ((retval = getopt_long(argc, argv, "c::gp:a:r:s:hd", longOpts, &idx)) != -1) {
         switch (retval) {
             case 'd':
                 if (strcmp(obj->GetName(), "submonitor") == 0) {
                     std::cout << " Submonitor does not support DummyMode" << std::endl;
                     return 1;
-                } else {
-                    obj->SetDummyMode(true);
                 }
+                obj->SetDummyMode(true);
                 break;
             case 'c':
-                // std::cout << " Colorized output not fully supported yet" << std::endl;
                 if (optarg == NULL && optind < argc && argv[optind][0] != '-') {
                     optarg = argv[optind++];
                 }
                 if (optarg != NULL) {
-                    // printf("opt arg is present\n");
                     obj->SetColorThreshGroup(optarg);
                 }
                 obj->SetColorOut(1);
                 break;
-            case 'l':
-                if (strcmp(obj->GetName(), "mainmonitor") == 0) {
-                    std::cout << " Logging output not supported yet" << std::endl;
-                    return 1;
-                } else {
-                    std::cout << "Logging only supported from Mainmontior" << std::endl;
+            case 'g':
+                if (strcmp(obj->GetName(), "mainmonitor") != 0) {
+                    std::cout << " Grafana export is only supported from mainmonitor" << std::endl;
                     return 1;
                 }
+                obj->SetGrafanaEnabled(true);
+                break;
+            case 'p': {
+                if (strcmp(obj->GetName(), "mainmonitor") != 0) {
+                    std::cout << " Prometheus export is only supported from mainmonitor" << std::endl;
+                    return 1;
+                }
+
+                int port = 0;
+                if (!ParsePositivePort(optarg, port)) {
+                    std::cout << " Invalid Prometheus port: " << (optarg ? optarg : "(null)") << std::endl;
+                    return 1;
+                }
+
+                obj->SetPrometheusPort(port);
+                overrodePrometheusOptions = true;
+                break;
+            }
+            case 'a':
+                if (strcmp(obj->GetName(), "mainmonitor") != 0) {
+                    std::cout << " Prometheus export is only supported from mainmonitor" << std::endl;
+                    return 1;
+                }
+                if (optarg == NULL || *optarg == '\0') {
+                    std::cout << " Prometheus bind address cannot be empty" << std::endl;
+                    return 1;
+                }
+                obj->SetPrometheusBindAddress(optarg);
+                overrodePrometheusOptions = true;
+                break;
             case 's':
                 if (strcmp(obj->GetName(), "mainmonitor") == 0) {
                     std::cout << " MainMonitor does not support the socket flag" << std::endl;
                     return 1;
-                } else {
-                    if ((atoi(optarg) - obj->GetPredefinedPoll2Port()) > 0 && (atoi(optarg) - obj->GetPredefinedPoll2Port()) <= obj->GetMaxNumSubMonitors()) {
-                        obj->SetSocketToUse(atoi(optarg));
-                        break;
-                    } else {
-                        std::cout << " Unavailable socket:: Pick another" << std::endl;
-                        return 1;
-                    };
                 }
+                if ((atoi(optarg) - obj->GetPredefinedPoll2Port()) > 0 && (atoi(optarg) - obj->GetPredefinedPoll2Port()) <= obj->GetMaxNumSubMonitors()) {
+                    obj->SetSocketToUse(atoi(optarg));
+                    break;
+                }
+                std::cout << " Unavailable socket:: Pick another" << std::endl;
+                return 1;
             case 'r':
-                // std::cout << " Row Splitting partial support" << std::endl;
                 if (optarg == NULL && optind < argc && argv[optind][0] != '-') {
                     optarg = argv[optind++];
                 }
                 if (optarg != NULL) {
-                    // printf("opt arg is present\n");
                     obj->SetNumberOfRowsForModuleList(atoi(optarg));
                 }
                 break;
@@ -225,6 +270,12 @@ int monitor::ParseCliFlags(int &argc, char *argv[], monitor *obj) {
                 break;
         };
     };
+    if (!GetGrafanaEnabled()) {
+        if( overrodePrometheusOptions ) {
+            std::cout << " Prometheus options are only valid if Grafana export is enabled" << std::endl;
+            return 1;
+        }
+    }
     return 0;
 }
 
@@ -235,9 +286,12 @@ void monitor::help(const char *progName) {
     if (strcmp(progName, "submonitor") == 0) {
         int minport = PREDEFINED_POLL2_PORT + 1;
         int maxPort = PREDEFINED_POLL2_PORT + MAX_NUM_SUBMONITORS;
-        std::cout << "  --socket (-s)         | Submonitor socket to use (Current range is " << to_string(minport) << "-" << to_string(maxPort) << ")\n";
+        std::cout << "  --socket (-s)         | Submonitor socket to use (Current range is " 
+        << std::to_string(minport) << "-" << std::to_string(maxPort) << ")\n";
     } else if (strcmp(progName, "mainmonitor") == 0) {
-        std::cout << "  --log (-l)            | Write monitor log files (not implemented yet)\n";
+        std::cout << "  --grafana (-g)        | Enable Grafana metrics export\n";
+        std::cout << "  --prometheus-port (-p)    | Prometheus listen port (default 9101)\n";
+        std::cout << "  --prometheus-address (-a)    | Prometheus bind address (default localhost)\n";
     }
     std::cout << "  --rows (-r)           | Number of rows\n";
     std::cout << "  --help (-h)           | Display this help dialogue.\n\n";
@@ -276,7 +330,7 @@ void monitor::DecodeUdpMsg(char *ptr, poll2_UDP_msg &ret, int &num_modules, bool
     }
 }
 
-void monitor::DecodeUdpMsg(poll2_UDP_msg &ret, int &num_modules, bool &first_packet, vector<pair<int, int>> &deadChan) {
+void monitor::DecodeUdpMsg(poll2_UDP_msg &ret, int &num_modules, bool &first_packet, std::vector<std::pair<int, int>> &deadChan) {
     if (first_packet) {
         ret.Data = new double *[num_modules];
         ret.ICR = new double *[num_modules];
@@ -306,7 +360,7 @@ void monitor::DecodeUdpMsg(poll2_UDP_msg &ret, int &num_modules, bool &first_pac
 
             int rand1 = rand() % 10;
             int rand2 = 1 + rand() % 6;
-            pair<int, int> randoms = make_pair(rand1, rand2);  // random dummy rate, o->9 base and 0->3 "E" power
+            std::pair<int, int> randoms = std::make_pair(rand1, rand2);  // random dummy rate, o->9 base and 0->3 "E" power
             //! for the sake of speed we will use the same "randoms" for ICR, OCR, and DATA, while totals witll just sum data over time
             ret.ICR[modIT][chanIT] = randoms.first * std::pow(10, randoms.second);
             ret.OCR[modIT][chanIT] = randoms.first * std::pow(10, randoms.second);
@@ -326,7 +380,7 @@ void monitor::DecodeUdpMsg(poll2_UDP_msg &ret, int &num_modules, bool &first_pac
     ret.data_rate = -9999;
 }
 
-void monitor::SetColorThresholdStruct(monitor::colorThresholds &cThresh, const string &rateGroup = "defaultRateGroup") {
+void monitor::SetColorThresholdStruct(monitor::colorThresholds &cThresh, const std::string &rateGroup = "defaultRateGroup") {
     if (strcmp(rateGroup.c_str(), "defaultRateGroup") == 0) {
         cThresh.crit_high = 20000;
         cThresh.warn_high = 8000;

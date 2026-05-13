@@ -73,6 +73,9 @@ include(CMakeDependentOption)
 
 #Install options
 option(PAASS_BUILD_ACQ "Build and install Acquisition software" OFF)
+if (PAASS_BUILD_ACQ)
+    option(PAASS_BUILD_PROMETHEUS_CPP "Fetch and build prometheus-cpp from GitHub if not found on the system" OFF)
+endif (PAASS_BUILD_ACQ)
 if ( ${CMAKE_SYSTEM_NAME} MATCHES "Darwin" )
   option(PAASS_BUILD_SCAN_UTILITIES "Build and install the Analysis Utilities" OFF)
   option(PAASS_BUILD_SHARED_LIBS "Install only scan libraries" OFF)
