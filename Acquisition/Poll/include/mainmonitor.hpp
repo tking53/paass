@@ -6,6 +6,7 @@
 
 
 #ifdef PAASS_USE_PROMETHEUS
+#include <chrono>
 #include <memory>
 #include <prometheus/counter.h>
 #include <prometheus/exposer.h>
@@ -33,13 +34,7 @@ class mainmonitor : public monitor {
 
     void CloseSubmonitors();
 #ifdef PAASS_USE_PROMETHEUS
-    void SetRunState(const RunState &state) {
-        runState_ = state;
-
-        if (runStateCodeGauge_) {
-            runStateCodeGauge_->Set(static_cast<double>(runState_));
-        }
-    };
+    void SetRunState(const RunState &state);
     RunState GetRunState() const { return runState_; };
     void InitPrometheus(const std::string &address, int port);
     void UpdatePrometheusMetrics(const monitor::poll2_UDP_msg &msg, int numModules);
@@ -66,6 +61,7 @@ class mainmonitor : public monitor {
     prometheus::Gauge *lastPulseGauge_ = nullptr;
     prometheus::Gauge *interpulseSecondsGauge_ = nullptr;
     prometheus::Gauge *runStateCodeGauge_ = nullptr;
+    prometheus::Gauge *lastBeginGauge_ = nullptr;
     double previousPulseUnixSeconds_ = -1.0;
 #endif
     RunState runState_ = RUN_STATE_NONE;

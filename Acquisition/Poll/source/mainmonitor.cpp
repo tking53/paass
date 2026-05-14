@@ -9,7 +9,6 @@
  */
 
 #include "mainmonitor.hpp"
-#include <chrono>
 
 // TODO test what happens when subs are ctrlC'd first then try to quit main
 // TODO also figureout best way to handle reading in the Max_Num_submontor var
@@ -78,6 +77,12 @@ void mainmonitor::InitPrometheus(const std::string &address, int port) {
                              .Register(*promRegistry_)
                              .Add({});
     runStateCodeGauge_->Set(static_cast<double>(runState_));
+    lastBeginGauge_ = &prometheus::BuildGauge()
+                             .Name("poll2_monitor_last_begin_unix_seconds")
+                             .Help("Unix timestamp (seconds) when the current run started; 0 when not running")
+                             .Register(*promRegistry_)
+                             .Add({});
+    lastBeginGauge_->Set(0.0);
 }
 
 void mainmonitor::UpdatePrometheusMetrics(const monitor::poll2_UDP_msg &msg, int numModules) {
@@ -135,6 +140,24 @@ void mainmonitor::EnsurePrometheusCapacity(int numModules) {
             ocr_[mod][chan] = &scalarRateFamily_->Add({{"module", moduleLabel}, {"channel", channelLabel}, {"type", "ocr"}});
             data_[mod][chan] = &scalarRateFamily_->Add({{"module", moduleLabel}, {"channel", channelLabel}, {"type", "data"}});
             totals_[mod][chan] = &scalarTotalsFamily_->Add({{"module", moduleLabel}, {"channel", channelLabel}});
+        }
+    }
+}
+
+void mainmonitor::SetRunState(const RunState &state){
+    runState_ = state;
+    if (runStateCodeGauge_){
+        runStateCodeGauge_->Set(static_cast<double>(runState_));
+    }
+    if (lastBeginGauge_) {
+        if (runState_ == RUN_STATE_RUN || runState_ == RUN_STATE_VME){
+            // We will get the current time in UNIX timestamp, cast to milliseconds and send it to the guage
+            const double now = static_cast<double>(
+                std::chrono::duration_cast<std::chrono::milliseconds>(
+                std::chrono::system_clock::now().time_since_epoch()).count());
+            lastBeginGauge_->Set(now);
+        }else if (runState_ == RUN_STATE_STOPPED || runState_ == RUN_STATE_NONE || runState_ == RUN_STATE_UNKNOWN_RUNNING){
+            lastBeginGauge_->Set(0.0);
         }
     }
 }
